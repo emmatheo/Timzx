@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+contracts/lib/
+
+# Build output
+.next/
+dist/
+build/
+out/
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+*.tsbuildinfo
+next-env.d.ts
+
+# Secrets — never commit. .env.example files are tracked deliberately.
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Tooling
+coverage/
+.vercel
+.DS_Store
