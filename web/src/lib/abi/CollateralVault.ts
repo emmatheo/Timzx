@@ -1,5 +1,5 @@
 // Generated from contracts/out/CollateralVault.sol/CollateralVault.json by script/export-abi.mjs.
-// Do not edit by hand; run `npm run abi` in contracts/ after changing the Solidity.
+// Do not edit by hand; run `node script/export-abi.mjs` from contracts/ after changing the Solidity.
 export const collateralVaultAbi = [
   {
     "type": "constructor",

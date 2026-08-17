@@ -27,7 +27,7 @@ for (const [name, file] of contracts) {
   const artifact = JSON.parse(readFileSync(join(outDir, file, `${name}.json`), 'utf8'));
   const varName = `${name.charAt(0).toLowerCase()}${name.slice(1)}Abi`;
   const body = `// Generated from contracts/out/${file}/${name}.json by script/export-abi.mjs.
-// Do not edit by hand; run \`npm run abi\` in contracts/ after changing the Solidity.
+// Do not edit by hand; run \`node script/export-abi.mjs\` from contracts/ after changing the Solidity.
 export const ${varName} = ${JSON.stringify(artifact.abi, null, 2)} as const;
 `;
   writeFileSync(join(target, `${name}.ts`), body);
