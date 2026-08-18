@@ -6,9 +6,9 @@ import type {Address} from 'viem';
 
 import {
   collateralVaultAbi,
-  demoAttestationAdapterAbi,
   repaymentManagerAbi,
-  testUSDAbi,
+  uscAttestationAdapterAbi,
+  settlementTokenAbi,
   tradeFinanceAbi,
 } from '@/lib/abi';
 import {contractAddresses} from '@/lib/config/env';
@@ -208,46 +208,30 @@ export function useCreditRecord(account?: Address) {
 }
 
 /**
- * The attestation policy this deployment enforces.
+ * The adapter the protocol is pointed at, and the proof kind it produces.
  *
- * Read from the chain rather than from configuration: the adapter's own `proofKind` and the
- * protocol's `requireProofBacked` flag are what actually govern whether an unproved event can move
- * a trade, so those are what the UI reports.
+ * Read from the chain rather than from configuration. `TradeFinance` accepts `USC_PROOF` and
+ * nothing else, and refuses to install an adapter that reports anything different, so this is a
+ * report on a live deployment rather than a toggle.
  */
-export function useAttestationPolicy() {
-  const {data} = useReadContracts({
-    contracts: financeAddress
-      ? [
-          {
-            address: financeAddress,
-            abi: tradeFinanceAbi,
-            chainId: creditcoin.id,
-            functionName: 'requireProofBacked',
-          } as const,
-          {
-            address: financeAddress,
-            abi: tradeFinanceAbi,
-            chainId: creditcoin.id,
-            functionName: 'attestationAdapter',
-          } as const,
-        ]
-      : [],
+export function useAttestationAdapter() {
+  const {data: adapterAddress} = useReadContract({
+    address: financeAddress ?? undefined,
+    abi: tradeFinanceAbi,
+    chainId: creditcoin.id,
+    functionName: 'attestationAdapter',
     query: {enabled: financeAddress !== null},
   });
 
-  const adapterAddress =
-    data?.[1]?.status === 'success' ? (data[1].result as Address) : undefined;
-
   const {data: adapterKind} = useReadContract({
     address: adapterAddress,
-    abi: demoAttestationAdapterAbi,
+    abi: uscAttestationAdapterAbi,
     chainId: creditcoin.id,
     functionName: 'proofKind',
     query: {enabled: adapterAddress !== undefined},
   });
 
   return {
-    requireProofBacked: data?.[0]?.status === 'success' ? (data[0].result as boolean) : null,
     adapterAddress: adapterAddress ?? null,
     adapterProofKind: adapterKind !== undefined ? Number(adapterKind) : ProofKind.NONE,
   };
@@ -265,20 +249,20 @@ export function useSettlementToken(account?: Address) {
         ? [
             {
               address: token,
-              abi: testUSDAbi,
+              abi: settlementTokenAbi,
               chainId: creditcoin.id,
               functionName: 'balanceOf',
               args: [target],
             } as const,
             {
               address: token,
-              abi: testUSDAbi,
+              abi: settlementTokenAbi,
               chainId: creditcoin.id,
               functionName: 'symbol',
             } as const,
             {
               address: token,
-              abi: testUSDAbi,
+              abi: settlementTokenAbi,
               chainId: creditcoin.id,
               functionName: 'decimals',
             } as const,

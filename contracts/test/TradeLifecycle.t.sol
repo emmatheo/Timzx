@@ -42,10 +42,10 @@ contract TradeLifecycleTest is BaseTest {
         assertEq(token.balanceOf(supplier), supplierBefore + FINANCING);
         assertEq(escrow.heldOf(tradeId), 0);
 
-        _advanceByDemo(tradeId, TradeTypes.EventKind.SHIPMENT_CONFIRMED, 0);
+        _advanceByProof(tradeId, TradeTypes.EventKind.SHIPMENT_CONFIRMED);
         assertEq(uint8(_stateOf(tradeId)), uint8(TradeTypes.TradeState.SHIPPED));
 
-        _advanceByDemo(tradeId, TradeTypes.EventKind.DELIVERY_CONFIRMED, 1);
+        _advanceByProof(tradeId, TradeTypes.EventKind.DELIVERY_CONFIRMED);
         assertEq(uint8(_stateOf(tradeId)), uint8(TradeTypes.TradeState.DELIVERED));
 
         uint256 due = FINANCING + (FINANCING * INTEREST_BPS) / 10_000;
@@ -82,8 +82,8 @@ contract TradeLifecycleTest is BaseTest {
 
     function test_overpaymentIsClampedToOutstanding() public {
         uint256 tradeId = _fundTrade();
-        _advanceByDemo(tradeId, TradeTypes.EventKind.SHIPMENT_CONFIRMED, 0);
-        _advanceByDemo(tradeId, TradeTypes.EventKind.DELIVERY_CONFIRMED, 1);
+        _advanceByProof(tradeId, TradeTypes.EventKind.SHIPMENT_CONFIRMED);
+        _advanceByProof(tradeId, TradeTypes.EventKind.DELIVERY_CONFIRMED);
 
         uint256 due = finance.outstandingOf(tradeId);
         uint256 buyerBefore = token.balanceOf(buyer);
@@ -100,8 +100,8 @@ contract TradeLifecycleTest is BaseTest {
 
     function test_repayAfterSettlementReverts() public {
         uint256 tradeId = _fundTrade();
-        _advanceByDemo(tradeId, TradeTypes.EventKind.SHIPMENT_CONFIRMED, 0);
-        _advanceByDemo(tradeId, TradeTypes.EventKind.DELIVERY_CONFIRMED, 1);
+        _advanceByProof(tradeId, TradeTypes.EventKind.SHIPMENT_CONFIRMED);
+        _advanceByProof(tradeId, TradeTypes.EventKind.DELIVERY_CONFIRMED);
 
         uint256 due = finance.outstandingOf(tradeId);
         vm.startPrank(buyer);
@@ -116,8 +116,8 @@ contract TradeLifecycleTest is BaseTest {
 
     function test_defaultSeizesCollateralAndReportsShortfall() public {
         uint256 tradeId = _fundTrade();
-        _advanceByDemo(tradeId, TradeTypes.EventKind.SHIPMENT_CONFIRMED, 0);
-        _advanceByDemo(tradeId, TradeTypes.EventKind.DELIVERY_CONFIRMED, 1);
+        _advanceByProof(tradeId, TradeTypes.EventKind.SHIPMENT_CONFIRMED);
+        _advanceByProof(tradeId, TradeTypes.EventKind.DELIVERY_CONFIRMED);
 
         uint256 due = finance.outstandingOf(tradeId);
         uint256 financierBefore = token.balanceOf(financier);

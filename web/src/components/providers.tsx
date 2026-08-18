@@ -15,8 +15,8 @@ export function Providers({children}: {children: ReactNode}) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            // Chain reads are cheap and the lifecycle moves during a demo, so a short stale window
-            // keeps the UI honest without hammering the RPC.
+            // Chain reads are cheap and a trade can advance while someone is looking at it, so a
+            // short stale window keeps the UI honest without hammering the RPC.
             staleTime: 10_000,
             retry: 1,
             refetchOnWindowFocus: false,

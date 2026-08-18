@@ -36,12 +36,11 @@ export type EventKindValue = (typeof EventKind)[keyof typeof EventKind];
 
 /**
  * How an attestation was established. Read from the chain, never inferred from configuration.
- * `USC_PROOF` is the only value that means a proof was verified by the block-prover precompile.
+ * `USC_PROOF` is the only non-null value: the protocol acts on proved events and nothing else.
  */
 export const ProofKind = {
   NONE: 0,
   USC_PROOF: 1,
-  DEMO_OPERATOR: 2,
 } as const;
 
 export type ProofKindValue = (typeof ProofKind)[keyof typeof ProofKind];
@@ -104,7 +103,6 @@ export interface TradeMetadata {
   buyerName: string;
   incoterms: string | null;
   summary: string | null;
-  isSeed: boolean;
 }
 
 /** A trade with its metadata attached, as the UI consumes it. */

@@ -7,62 +7,55 @@ import {useAccount} from 'wagmi';
 import {Button} from '@/components/ui/button';
 import {Card, CardBody, CardHeader} from '@/components/ui/card';
 import {Field, Select, TextInput} from '@/components/ui/field';
-import {EmptyState} from '@/components/ui/states';
+import {EmptyState, LoadingState} from '@/components/ui/states';
+import {useMessages} from '@/hooks/use-messages';
 import {useMyTrades} from '@/hooks/use-protocol';
+import {useSession} from '@/hooks/use-session';
 import {useTradeViews} from '@/hooks/use-trade-views';
 import {formatRelative, shortenAddress} from '@/lib/format';
-
-interface LocalMessage {
-  id: string;
-  tradeId: string;
-  sender: string;
-  body: string;
-  sentAt: number;
-}
 
 /**
  * Trade messaging.
  *
- * Counterparty correspondence attached to a trade. Messages are off-chain by design — commercial
- * discussion does not belong in consensus, and nothing here affects protocol state.
- *
- * Held in session state in this build; the `messages` table and a Supabase realtime channel
- * replace the state hook without changing the component.
+ * Correspondence attached to a trade, persisted in Supabase. Off-chain by design — commercial
+ * discussion does not belong in consensus — but the sender is established by a wallet signature,
+ * so a message cannot be posted under someone else's address.
  */
 export default function MessagesPage() {
-  const {address, isConnected} = useAccount();
+  const {address} = useAccount();
   const {trades: entries} = useMyTrades();
   const views = useTradeViews(entries);
-  const [messages, setMessages] = useState<LocalMessage[]>([]);
-  const [tradeId, setTradeId] = useState('');
+  const [tradeId, setTradeId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
 
-  const send = () => {
-    if (!draft.trim() || !tradeId || !address) return;
-    setMessages((current) => [
-      ...current,
-      {id: `${Date.now()}`, tradeId, sender: address, body: draft.trim(), sentAt: Date.now()},
-    ]);
+  const {messages, isLoading, send, isSending} = useMessages(tradeId);
+  const {authenticated, signIn, isSigningIn} = useSession();
+
+  const submit = async () => {
+    if (!draft.trim() || !tradeId) return;
+    await send({tradeId, body: draft.trim()});
     setDraft('');
   };
-
-  const thread = messages.filter((message) => message.tradeId === tradeId);
 
   return (
     <div className="space-y-5">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight text-ink">Messages</h1>
         <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-ink-muted">
-          Counterparty correspondence attached to a trade. Off-chain by design — nothing sent here
-          affects protocol state.
+          Counterparty correspondence attached to a trade. Nothing sent here affects protocol
+          state.
         </p>
       </header>
 
       <Card>
-        <CardHeader title="Trade thread" />
-        <CardBody className="space-y-4">
-          <Field label="Trade">
-            <Select value={tradeId} onChange={(event) => setTradeId(event.target.value)}>
+        <CardHeader
+          title="Trade thread"
+          action={
+            <Select
+              value={tradeId ?? ''}
+              onChange={(event) => setTradeId(event.target.value || null)}
+              className="h-8 w-auto text-[13px]"
+            >
               <option value="">Select a trade</option>
               {views.map(({chain, meta}) => (
                 <option key={chain.id.toString()} value={chain.id.toString()}>
@@ -70,15 +63,18 @@ export default function MessagesPage() {
                 </option>
               ))}
             </Select>
-          </Field>
-
-          {!tradeId ? (
+          }
+        />
+        <CardBody className="space-y-4">
+          {tradeId === null ? (
             <EmptyState
               icon={MessagesSquare}
               title="Select a trade"
               description="Choose a trade to open its correspondence thread."
             />
-          ) : thread.length === 0 ? (
+          ) : isLoading ? (
+            <LoadingState label="Loading thread" />
+          ) : messages.length === 0 ? (
             <EmptyState
               icon={MessagesSquare}
               title="No messages yet"
@@ -86,13 +82,10 @@ export default function MessagesPage() {
             />
           ) : (
             <ul className="space-y-3">
-              {thread.map((message) => {
+              {messages.map((message) => {
                 const mine = message.sender.toLowerCase() === address?.toLowerCase();
                 return (
-                  <li
-                    key={message.id}
-                    className={mine ? 'flex justify-end' : 'flex justify-start'}
-                  >
+                  <li key={message.id} className={mine ? 'flex justify-end' : 'flex justify-start'}>
                     <div
                       className={
                         mine
@@ -105,7 +98,7 @@ export default function MessagesPage() {
                       </p>
                       <p className="mt-1 text-[11.5px] text-ink-subtle">
                         {shortenAddress(message.sender)} ·{' '}
-                        {formatRelative(Math.floor(message.sentAt / 1000))}
+                        {formatRelative(Math.floor(new Date(message.sentAt).getTime() / 1000))}
                       </p>
                     </div>
                   </li>
@@ -114,20 +107,38 @@ export default function MessagesPage() {
             </ul>
           )}
 
-          <div className="flex gap-2">
-            <TextInput
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') send();
-              }}
-              placeholder={isConnected ? 'Write a message' : 'Connect a wallet to send messages'}
-              disabled={!isConnected || !tradeId}
-            />
-            <Button icon={Send} onClick={send} disabled={!isConnected || !tradeId || !draft.trim()}>
-              Send
-            </Button>
-          </div>
+          {tradeId !== null ? (
+            authenticated ? (
+              <div className="flex gap-2">
+                <TextInput
+                  value={draft}
+                  onChange={(event) => setDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') void submit();
+                  }}
+                  placeholder="Write a message"
+                  disabled={isSending}
+                />
+                <Button
+                  icon={Send}
+                  loading={isSending}
+                  onClick={() => void submit()}
+                  disabled={!draft.trim()}
+                >
+                  Send
+                </Button>
+              </div>
+            ) : (
+              <Field
+                label="Sign in to reply"
+                hint="Posting requires a signature proving you control this wallet, so a message cannot be sent under another address."
+              >
+                <Button loading={isSigningIn} onClick={signIn}>
+                  Sign in with wallet
+                </Button>
+              </Field>
+            )
+          ) : null}
         </CardBody>
       </Card>
     </div>

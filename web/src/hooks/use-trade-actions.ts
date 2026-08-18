@@ -4,7 +4,7 @@ import {useCallback, useState} from 'react';
 import {useAccount, usePublicClient, useWalletClient} from 'wagmi';
 import type {Address, Hex} from 'viem';
 
-import {collateralVaultAbi, testUSDAbi, tradeFinanceAbi} from '@/lib/abi';
+import {collateralVaultAbi, settlementTokenAbi, tradeFinanceAbi} from '@/lib/abi';
 import {creditcoin, explorerTxUrl} from '@/lib/config/chains';
 import {contractAddresses} from '@/lib/config/env';
 import {useToast} from '@/components/ui/toast';
@@ -70,7 +70,7 @@ export function useTradeActions(onSettled?: () => void | Promise<void>) {
 
       const allowance = await publicClient.readContract({
         address: token,
-        abi: testUSDAbi,
+        abi: settlementTokenAbi,
         functionName: 'allowance',
         args: [address, spender],
       });
@@ -80,7 +80,7 @@ export function useTradeActions(onSettled?: () => void | Promise<void>) {
       const {request} = await publicClient.simulateContract({
         account: address,
         address: token,
-        abi: testUSDAbi,
+        abi: settlementTokenAbi,
         functionName: 'approve',
         args: [spender, amount],
       });

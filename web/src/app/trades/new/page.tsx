@@ -8,7 +8,7 @@ import {isAddress, keccak256, toHex, type Address} from 'viem';
 
 import {Button} from '@/components/ui/button';
 import {Card, CardBody, CardHeader} from '@/components/ui/card';
-import {DataPoint, Field, Select, TextInput} from '@/components/ui/field';
+import {DataPoint, Field, TextInput} from '@/components/ui/field';
 import {useTradeActions} from '@/hooks/use-trade-actions';
 import {useTradeCount} from '@/hooks/use-protocol';
 import {creditcoin} from '@/lib/config/chains';
@@ -19,15 +19,13 @@ import {
   totalRepayable,
 } from '@/lib/finance';
 import {formatMoney, formatPercent, parseMoneyInput} from '@/lib/format';
-import {SEED_LISTINGS, saveTradeMetadata} from '@/lib/services/trade-metadata';
+import {saveTradeMetadata} from '@/lib/services/trade-metadata';
 
 /**
  * Trade origination.
  *
  * The form computes the same figures the contracts will, from the same bigint inputs, so the
- * summary panel is a preview of the on-chain outcome rather than an independent estimate. The
- * prefill dropdown pulls from the illustrative corridors — it fills the fields in and then gets
- * out of the way; what gets created is a real trade with the user's own numbers.
+ * summary panel is a preview of the on-chain outcome rather than an independent estimate.
  */
 export default function NewTradePage() {
   const router = useRouter();
@@ -79,21 +77,6 @@ export default function NewTradePage() {
   const financing = tradeValue !== null && collateral !== null ? tradeValue - collateral : 0n;
   const terms = {tradeValue: tradeValue ?? 0n, collateral: collateral ?? 0n, financing};
 
-  const prefill = (key: string) => {
-    const listing = SEED_LISTINGS.find((entry) => entry.key === key);
-    if (!listing) return;
-    setTitle(listing.title);
-    setCommodity(listing.commodity);
-    setIndustry(listing.industry);
-    setOrigin(listing.originCountry);
-    setDestination(listing.destinationCountry);
-    setSupplierName(listing.supplierName);
-    setTradeValueRaw(String(listing.tradeValueUsd));
-    setCollateralRaw(String(listing.collateralUsd));
-    setTermDays(String(listing.termDays));
-    setInterestPercent((listing.interestBps / 100).toFixed(2));
-  };
-
   const submit = async () => {
     if (!valid || tradeValue === null || collateral === null) return;
 
@@ -132,7 +115,6 @@ export default function NewTradePage() {
       buyerName: '',
       incoterms: null,
       summary: null,
-      isSeed: false,
     });
 
     router.push(`/trades/${newId}`);
@@ -226,20 +208,6 @@ export default function NewTradePage() {
             <CardHeader
               title="Trade description"
               description="Stored off-chain and anchored by hash. Helps financiers assess the corridor."
-              action={
-                <Select
-                  defaultValue=""
-                  onChange={(event) => prefill(event.target.value)}
-                  className="h-8 w-auto text-[13px]"
-                >
-                  <option value="">Prefill from corridor</option>
-                  {SEED_LISTINGS.map((listing) => (
-                    <option key={listing.key} value={listing.key}>
-                      {listing.title}
-                    </option>
-                  ))}
-                </Select>
-              }
             />
             <CardBody className="grid gap-4 sm:grid-cols-2">
               <Field label="Title" className="sm:col-span-2">

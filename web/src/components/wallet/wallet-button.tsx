@@ -11,8 +11,8 @@ import {shortenAddress} from '@/lib/format';
 /**
  * Wallet connection.
  *
- * Shows the real connection state from wagmi. There is no "demo wallet" — every action in this
- * product is a real transaction signed by a real key, even in demo attestation mode.
+ * Shows the real connection state from wagmi. Every action in this product is a transaction
+ * signed by a real key; there is no simulated wallet.
  */
 export function WalletButton() {
   const {address, isConnected} = useAccount();

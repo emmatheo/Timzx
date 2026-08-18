@@ -30,8 +30,31 @@ export interface Database {
           email: string | null;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['profiles']['Row'], 'created_at'>;
+        // Only the address is required: a profile is created the first time a wallet signs in,
+        // before the person has told us anything about themselves.
+        Insert: {
+          wallet_address: string;
+          display_name?: string | null;
+          role?: 'buyer' | 'supplier' | 'financier';
+          organization_id?: string | null;
+          email?: string | null;
+        };
         Update: Partial<Database['public']['Tables']['profiles']['Insert']>;
+        Relationships: [];
+      };
+      auth_nonces: {
+        Row: {
+          nonce: string;
+          address: string;
+          expires_at: string;
+          created_at: string;
+        };
+        Insert: {
+          nonce: string;
+          address: string;
+          expires_at: string;
+        };
+        Update: Partial<Database['public']['Tables']['auth_nonces']['Insert']>;
         Relationships: [];
       };
       trade_metadata: {
@@ -47,7 +70,6 @@ export interface Database {
           buyer_name: string;
           incoterms: string | null;
           summary: string | null;
-          is_seed: boolean;
           created_at: string;
         };
         Insert: Omit<Database['public']['Tables']['trade_metadata']['Row'], 'created_at'>;
@@ -65,7 +87,9 @@ export interface Database {
           uploaded_by: string | null;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['documents']['Row'], 'id' | 'created_at'>;
+        Insert: Omit<Database['public']['Tables']['documents']['Row'], 'id' | 'created_at'> & {
+          id?: string;
+        };
         Update: Partial<Database['public']['Tables']['documents']['Insert']>;
         Relationships: [];
       };
@@ -95,7 +119,9 @@ export interface Database {
           body: string;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['messages']['Row'], 'id' | 'created_at'>;
+        Insert: Omit<Database['public']['Tables']['messages']['Row'], 'id' | 'created_at'> & {
+          id?: string;
+        };
         Update: Partial<Database['public']['Tables']['messages']['Insert']>;
         Relationships: [];
       };

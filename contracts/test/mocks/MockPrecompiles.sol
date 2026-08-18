@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IChainInfo} from "../interfaces/IChainInfo.sol";
-import {INativeQueryVerifier} from "../interfaces/INativeQueryVerifier.sol";
+import {IChainInfo} from "../../src/interfaces/IChainInfo.sol";
+import {INativeQueryVerifier} from "../../src/interfaces/INativeQueryVerifier.sol";
 
 /// @title MockChainInfo
 /// @notice Test double for the Creditcoin ChainInfo precompile at `0x…0FD3`.
@@ -70,5 +70,27 @@ contract MockBlockProver is INativeQueryVerifier {
     {
         if (shouldRevert) revert MockProofRejected();
         return result;
+    }
+}
+
+/// @title NonProvingAdapter
+/// @notice An adapter that reports it cannot produce USC proofs.
+/// @dev Exists to prove that `TradeFinance.setAttestationAdapter` rejects it. Nothing like this
+///      ships in `src/` — the protocol has exactly one adapter and it proves.
+contract NonProvingAdapter {
+    function proofKind() external pure returns (uint8) {
+        return 0; // TradeTypes.ProofKind.NONE
+    }
+
+    function getAttestation(bytes32) external pure returns (bytes memory) {
+        return "";
+    }
+
+    function isRecorded(bytes32) external pure returns (bool) {
+        return false;
+    }
+
+    function attestationId(uint64, bytes32, uint32) external pure returns (bytes32) {
+        return bytes32(0);
     }
 }

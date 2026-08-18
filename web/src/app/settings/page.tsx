@@ -10,7 +10,6 @@ import {cn} from '@/components/ui/cn';
 import {useRole} from '@/hooks/use-role';
 import {activeNetworkName, creditcoin, explorerAddressUrl, sourceChain} from '@/lib/config/chains';
 import {
-  attestationMode,
   isChainConfigured,
   isProofPipelineConfigured,
   isSupabaseConfigured,
@@ -87,10 +86,6 @@ export default function SettingsPage() {
               label="Source chain key"
               value={String(uscConfig.sourceChainKey)}
               hint="Creditcoin's identifier for the source chain, not its EVM chain id"
-            />
-            <Row
-              label="Attestation mode"
-              value={attestationMode === 'usc' ? 'USC proving' : 'Demo assertion'}
             />
             <StatusRow label="Protocol contracts" ok={isChainConfigured} />
             <StatusRow label="Proof pipeline" ok={isProofPipelineConfigured} />

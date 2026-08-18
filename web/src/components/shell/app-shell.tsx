@@ -9,7 +9,7 @@ import {Logo} from './logo';
 import {navItems} from './nav-items';
 import {NetworkSelector} from '@/components/wallet/network-selector';
 import {WalletButton} from '@/components/wallet/wallet-button';
-import {DeploymentBanner} from '@/components/ui/data-mode';
+import {NetworkBanner} from '@/components/ui/data-mode';
 import {cn} from '@/components/ui/cn';
 import {useRole} from '@/hooks/use-role';
 
@@ -176,7 +176,7 @@ export function AppShell({children}: {children: ReactNode}) {
         </header>
 
         <main className="px-4 pt-5 pb-24 sm:px-6 lg:pb-10">
-          <DeploymentBanner className="mb-5" />
+          <NetworkBanner className="mb-5" />
           {children}
         </main>
       </div>

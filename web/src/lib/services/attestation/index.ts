@@ -1,7 +1,6 @@
 import type {PublicClient, WalletClient} from 'viem';
 
-import {attestationMode, contractAddresses, uscConfig} from '@/lib/config/env';
-import {DemoAttestationService} from './demo-service';
+import {contractAddresses, uscConfig} from '@/lib/config/env';
 import {UscAttestationService} from './usc-service';
 import type {AttestationService} from './types';
 
@@ -15,31 +14,23 @@ export {
 } from './field-offsets';
 
 /**
- * Builds the attestation service for the current deployment.
+ * Builds the attestation service.
  *
- * The choice is configuration, not code: `NEXT_PUBLIC_ATTESTATION_MODE` decides which
- * implementation the app drives, and everything downstream consumes the same interface. Note that
- * this only picks which contract gets written to — the proof kind shown in the UI is always read
- * back from the chain, so a misconfiguration cannot make a demo record look verified.
+ * There is one implementation. Establishing a cross-chain event means fetching an inclusion proof,
+ * confirming the source height is attested on Creditcoin, and submitting the proof to the adapter,
+ * which verifies it against the block-prover precompile before recording anything. There is no
+ * alternative path and no mode switch: an event this pipeline cannot prove is an event the product
+ * does not act on.
  */
 export function createAttestationService(clients: {
   publicClient: PublicClient;
   walletClient: WalletClient;
 }): AttestationService {
-  if (attestationMode === 'usc') {
-    return new UscAttestationService({
-      publicClient: clients.publicClient,
-      walletClient: clients.walletClient,
-      adapterAddress: contractAddresses.uscAdapter,
-      proofApiUrl: uscConfig.proofApiUrl,
-      sourceChainKey: uscConfig.sourceChainKey,
-    });
-  }
-
-  return new DemoAttestationService({
+  return new UscAttestationService({
     publicClient: clients.publicClient,
     walletClient: clients.walletClient,
-    adapterAddress: contractAddresses.demoAdapter,
+    adapterAddress: contractAddresses.uscAdapter,
+    proofApiUrl: uscConfig.proofApiUrl,
     sourceChainKey: uscConfig.sourceChainKey,
   });
 }

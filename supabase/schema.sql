@@ -9,6 +9,10 @@
 -- the Developer page can page through history without scanning logs. It is a cache. The chain is
 -- still the authority, and the UI reads proof kind from the adapter contract, never from this
 -- table.
+--
+-- Writes never come from the browser. The anon key is read-only by policy; every insert goes
+-- through a Next.js route handler that has already verified a wallet signature and then uses the
+-- service role. See `web/src/app/api`.
 
 create extension if not exists "pgcrypto";
 
@@ -58,7 +62,6 @@ create table if not exists trade_metadata (
   buyer_name text not null default '',
   incoterms text,
   summary text,
-  is_seed boolean not null default false,
   created_at timestamptz not null default now(),
   primary key (trade_id, chain_id)
 );
@@ -145,17 +148,42 @@ create index if not exists attestation_index_trade_idx on attestation_index (tra
 create index if not exists attestation_index_proof_idx on attestation_index (proof_kind);
 
 -- ---------------------------------------------------------------------------
+-- Sign-in nonces
+-- ---------------------------------------------------------------------------
+
+-- Single-use challenges for wallet sign-in. Rows are deleted on verification — successful or
+-- not — so a captured signature cannot be replayed against the same challenge.
+create table if not exists auth_nonces (
+  nonce text primary key,
+  address text not null check (address ~ '^0x[0-9a-fA-F]{40}$'),
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists auth_nonces_address_idx on auth_nonces (address, created_at desc);
+create index if not exists auth_nonces_expiry_idx on auth_nonces (expires_at);
+
+-- Housekeeping for challenges nobody completed. Safe to schedule with pg_cron.
+create or replace function purge_expired_nonces() returns void
+language sql
+as $$
+  delete from auth_nonces where expires_at < now();
+$$;
+
+-- ---------------------------------------------------------------------------
 -- Row level security
 -- ---------------------------------------------------------------------------
 
--- Everything here is descriptive and publicly readable — a marketplace is only useful if listings
--- can be browsed before connecting a wallet. Writes are restricted to the service role, so the
--- anon key shipped to the browser cannot mutate anything; the app writes through a server route
--- or an authenticated session.
+-- Descriptive tables are publicly readable — a marketplace is only useful if listings can be
+-- browsed before connecting a wallet. Writes are restricted to the service role, so the anon key
+-- shipped to the browser cannot mutate anything.
 --
 -- Note the deliberate absence of a "users can edit their own row" policy keyed on wallet address:
--- an anon client can claim any address, so wallet-scoped writes need signature verification
--- server-side rather than an RLS predicate.
+-- an anon client can claim any address, so wallet-scoped writes need signature verification, which
+-- happens in the route handlers before the service role is used.
+--
+-- `auth_nonces` is excluded from public reads entirely. A readable nonce table would let anyone
+-- enumerate outstanding challenges.
 
 alter table organizations enable row level security;
 alter table profiles enable row level security;
@@ -164,6 +192,7 @@ alter table documents enable row level security;
 alter table shipments enable row level security;
 alter table messages enable row level security;
 alter table attestation_index enable row level security;
+alter table auth_nonces enable row level security;
 
 do $$
 declare
@@ -184,3 +213,6 @@ begin
     );
   end loop;
 end $$;
+
+-- No policy is created for `auth_nonces`, so with RLS enabled the anon key can neither read nor
+-- write it. Only the service role, which bypasses RLS, can touch it.

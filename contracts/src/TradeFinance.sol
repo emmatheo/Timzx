@@ -34,14 +34,10 @@ contract TradeFinance is Ownable, ReentrancyGuard {
     RepaymentManager public immutable repayments;
 
     /// @notice Adapter consulted for cross-chain events.
-    /// @dev Swappable by the owner so a deployment can move from the demo adapter to the USC
-    ///      adapter without redeploying the protocol or migrating trade state.
+    /// @dev Swappable by the owner so the proving implementation can be upgraded without
+    ///      redeploying the protocol or migrating trade state. An adapter that does not produce
+    ///      USC proofs is rejected, so the swap cannot weaken the guarantee.
     IAttestationAdapter public attestationAdapter;
-
-    /// @notice When true, only `ProofKind.USC_PROOF` attestations are accepted.
-    /// @dev The switch that makes demo mode safe to ship: a mainnet deployment sets this and every
-    ///      demo-operator assertion is rejected on-chain, not merely discouraged in the UI.
-    bool public requireProofBacked;
 
     /// @notice Accounts permitted to verify suppliers off-chain (KYB path).
     mapping(address => bool) public supplierVerifiers;
@@ -103,7 +99,6 @@ contract TradeFinance is Ownable, ReentrancyGuard {
         TradeTypes.TradeState newState
     );
     event AttestationAdapterChanged(address indexed adapter, TradeTypes.ProofKind proofKind);
-    event ProofRequirementChanged(bool required);
     event SupplierVerifierSet(address indexed verifier, bool allowed);
 
     error NotSupplierVerifier(address caller);
@@ -122,8 +117,7 @@ contract TradeFinance is Ownable, ReentrancyGuard {
         CollateralVault collateralVault_,
         TradeEscrow escrow_,
         RepaymentManager repayments_,
-        IAttestationAdapter adapter_,
-        bool requireProofBacked_
+        IAttestationAdapter adapter_
     ) Ownable(initialOwner) {
         if (
             address(collateralVault_) == address(0) || address(escrow_) == address(0)
@@ -134,11 +128,9 @@ contract TradeFinance is Ownable, ReentrancyGuard {
         escrow = escrow_;
         repayments = repayments_;
         attestationAdapter = adapter_;
-        requireProofBacked = requireProofBacked_;
         supplierVerifiers[initialOwner] = true;
 
         emit AttestationAdapterChanged(address(adapter_), adapter_.proofKind());
-        emit ProofRequirementChanged(requireProofBacked_);
         emit SupplierVerifierSet(initialOwner, true);
     }
 
@@ -149,14 +141,11 @@ contract TradeFinance is Ownable, ReentrancyGuard {
     /// @notice Point the protocol at a different attestation adapter.
     function setAttestationAdapter(IAttestationAdapter adapter_) external onlyOwner {
         if (address(adapter_) == address(0)) revert TradeTypes.ZeroAddress();
+        // An adapter that cannot produce USC proofs would make every advance revert. Rejecting it
+        // here turns a silently bricked protocol into a failed transaction.
+        if (adapter_.proofKind() != TradeTypes.ProofKind.USC_PROOF) revert TradeTypes.ProofRequired();
         attestationAdapter = adapter_;
         emit AttestationAdapterChanged(address(adapter_), adapter_.proofKind());
-    }
-
-    /// @notice Require cryptographic proof for every cross-chain event.
-    function setRequireProofBacked(bool required) external onlyOwner {
-        requireProofBacked = required;
-        emit ProofRequirementChanged(required);
     }
 
     /// @notice Allow or disallow an account to verify suppliers via the off-chain KYB path.
@@ -463,9 +452,8 @@ contract TradeFinance is Ownable, ReentrancyGuard {
         a = attestationAdapter.getAttestation(id);
         if (a.proofKind == TradeTypes.ProofKind.NONE) revert TradeTypes.AttestationMismatch();
         if (a.tradeId != tradeId) revert TradeTypes.AttestationMismatch();
-        if (requireProofBacked && a.proofKind != TradeTypes.ProofKind.USC_PROOF) {
-            revert TradeTypes.ProofRequired();
-        }
+        // Unconditional. There is no configuration under which an unproved event moves a trade.
+        if (a.proofKind != TradeTypes.ProofKind.USC_PROOF) revert TradeTypes.ProofRequired();
 
         attestationConsumed[id] = true;
     }

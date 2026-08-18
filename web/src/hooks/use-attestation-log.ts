@@ -5,7 +5,7 @@ import {usePublicClient} from 'wagmi';
 import {parseAbiItem, type Address, type Hex} from 'viem';
 
 import {creditcoin} from '@/lib/config/chains';
-import {useAttestationPolicy} from '@/hooks/use-protocol';
+import {useAttestationAdapter} from '@/hooks/use-protocol';
 import {ProofKind, type Attestation, type EventKindValue, type ProofKindValue} from '@/types/trade';
 
 /**
@@ -33,7 +33,7 @@ export interface AttestationLogEntry {
  */
 export function useAttestationLog(options: {tradeId?: bigint; limit?: number} = {}) {
   const publicClient = usePublicClient({chainId: creditcoin.id});
-  const {adapterAddress} = useAttestationPolicy();
+  const {adapterAddress} = useAttestationAdapter();
 
   const query = useQuery({
     queryKey: [

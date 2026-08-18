@@ -1,9 +1,19 @@
-// Generated from contracts/out/TestUSD.sol/TestUSD.json by script/export-abi.mjs.
+// Generated from contracts/out/SettlementToken.sol/SettlementToken.json by script/export-abi.mjs.
 // Do not edit by hand; run `node script/export-abi.mjs` from contracts/ after changing the Solidity.
-export const testUSDAbi = [
+export const settlementTokenAbi = [
   {
     "type": "constructor",
     "inputs": [
+      {
+        "name": "name_",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "symbol_",
+        "type": "string",
+        "internalType": "string"
+      },
       {
         "name": "initialOwner",
         "type": "address",
@@ -81,6 +91,19 @@ export const testUSDAbi = [
   },
   {
     "type": "function",
+    "name": "burn",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "decimals",
     "inputs": [],
     "outputs": [
@@ -112,6 +135,25 @@ export const testUSDAbi = [
   },
   {
     "type": "function",
+    "name": "minters",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "name",
     "inputs": [],
     "outputs": [
@@ -140,6 +182,24 @@ export const testUSDAbi = [
     "type": "function",
     "name": "renounceOwnership",
     "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setMinter",
+    "inputs": [
+      {
+        "name": "minter",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "allowed",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
     "outputs": [],
     "stateMutability": "nonpayable"
   },
@@ -256,6 +316,25 @@ export const testUSDAbi = [
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "MinterSet",
+    "inputs": [
+      {
+        "name": "minter",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "allowed",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
       }
     ],
     "anonymous": false
@@ -392,6 +471,17 @@ export const testUSDAbi = [
   },
   {
     "type": "error",
+    "name": "NotMinter",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
     "name": "OwnableInvalidOwner",
     "inputs": [
       {
@@ -411,5 +501,10 @@ export const testUSDAbi = [
         "internalType": "address"
       }
     ]
+  },
+  {
+    "type": "error",
+    "name": "ZeroAddress",
+    "inputs": []
   }
 ] as const;

@@ -2,14 +2,12 @@
  * The USC integration seam.
  *
  * Everything the app knows about establishing a cross-chain event goes through
- * {@link AttestationService}. There are two implementations — one that builds and submits real
- * proofs, one that records operator assertions on a testnet — and no caller can tell them apart
- * except by asking, which is the point: swapping them is a configuration change, not a rewrite.
+ * {@link AttestationService}. Its single implementation builds a Merkle and continuity proof and
+ * submits it for on-chain verification.
  *
- * The rule this interface exists to enforce: a plain API request is not a proof. `DemoAttestation`
- * and `UscAttestation` are different types, `capabilities.produces` reports which one an
- * implementation yields, and the result carries the on-chain `ProofKind` read back from the
- * adapter rather than a value the client chose.
+ * The rule this interface exists to enforce: a plain API request is not a proof. The result
+ * carries the `ProofKind` read back from the adapter after confirmation, never a value the client
+ * chose, so nothing downstream can present an unproved event as a verified one.
  */
 import type {Address, Hex} from 'viem';
 
@@ -68,7 +66,7 @@ export interface AttestationRequest {
 
 /** What an implementation can actually do, so the UI can describe it accurately. */
 export interface AttestationCapabilities {
-  /** The proof kind this service produces. Determines every label the UI shows. */
+  /** The proof kind this service produces. Always `USC_PROOF`. */
   produces: ProofKindValue;
   /** Adapter contract this service submits to, or null when unconfigured. */
   adapterAddress: Address | null;

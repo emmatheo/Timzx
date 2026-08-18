@@ -44,16 +44,14 @@ library TradeTypes {
         REPAYMENT_SETTLED
     }
 
-    /// @notice How a given attestation was established.
-    /// @dev This is the honesty switch that runs through the whole system. `USC_PROOF` is the only
-    ///      value that means "a Merkle + continuity proof was verified by the Creditcoin block-prover
-    ///      precompile". `DEMO_OPERATOR` means a permissioned operator asserted the event on a
-    ///      testnet deployment and NOTHING was cryptographically proven. The frontend renders these
-    ///      two differently and must never present the second as the first.
+    /// @notice How an attestation was established.
+    /// @dev Only one non-null value exists, and that is the point. `USC_PROOF` means a Merkle plus
+    ///      continuity proof was verified by the Creditcoin block-prover precompile and the proven
+    ///      bytes were bound to this trade. There is no operator-asserted variant: an event the
+    ///      protocol cannot prove is an event the protocol does not act on.
     enum ProofKind {
         NONE,
-        USC_PROOF,
-        DEMO_OPERATOR
+        USC_PROOF
     }
 
     /// @notice A cross-chain event that the protocol has accepted as having happened.
@@ -120,7 +118,7 @@ library TradeTypes {
     error InvalidTerms();
     /// @notice Thrown when an attestation does not match the trade or event it is presented for.
     error AttestationMismatch();
-    /// @notice Thrown when a proof-backed attestation is required but a demo one was supplied.
+    /// @notice Thrown when an attestation was not established by a verified USC proof.
     error ProofRequired();
     /// @notice Thrown when the same source transaction is replayed.
     error AttestationReplayed(bytes32 attestationId);

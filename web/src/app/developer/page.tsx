@@ -10,9 +10,9 @@ import {Card, CardBody, CardHeader} from '@/components/ui/card';
 import {Copyable} from '@/components/ui/copyable';
 import {EmptyState, SkeletonRows} from '@/components/ui/states';
 import {useAttestationLog} from '@/hooks/use-attestation-log';
-import {useAttestationPolicy} from '@/hooks/use-protocol';
+import {useAttestationAdapter} from '@/hooks/use-protocol';
 import {creditcoin, explorerAddressUrl, precompiles, sourceChain} from '@/lib/config/chains';
-import {attestationMode, contractAddresses, uscConfig} from '@/lib/config/env';
+import {contractAddresses, isProofPipelineConfigured, uscConfig} from '@/lib/config/env';
 import {shortenAddress} from '@/lib/format';
 import {eventKindPresentation, proofKindPresentation} from '@/lib/trade-state';
 import {EventKind, ProofKind, type ProofKindValue} from '@/types/trade';
@@ -49,8 +49,8 @@ const chainInfoAbi = [
  * environment, so a mismatch with configuration is called out rather than hidden.
  */
 export default function DeveloperPage() {
-  const {entries, isLoading, adapterAddress} = useAttestationLog({limit: 25});
-  const policy = useAttestationPolicy();
+  const {entries, isLoading} = useAttestationLog({limit: 25});
+  const adapter = useAttestationAdapter();
 
   const {data: supportedChains, isError: chainsError} = useReadContract({
     address: precompiles.chainInfo,
@@ -61,7 +61,7 @@ export default function DeveloperPage() {
 
   const configuredKey = uscConfig.sourceChainKey;
   const matched = supportedChains?.find((chain) => Number(chain.chainKey) === configuredKey);
-  const proofPresentation = proofKindPresentation(policy.adapterProofKind as ProofKindValue);
+  const proofPresentation = proofKindPresentation(adapter.adapterProofKind as ProofKindValue);
 
   return (
     <div className="space-y-5">
@@ -79,22 +79,20 @@ export default function DeveloperPage() {
           description="Read from the contracts, not from configuration."
         />
         <CardBody className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Fact label="Attestation mode" value={attestationMode === 'usc' ? 'USC proving' : 'Demo assertion'} />
           <Fact
             label="Adapter proof kind"
             value={proofPresentation.label}
-            tone={policy.adapterProofKind === ProofKind.USC_PROOF ? 'positive' : 'warning'}
+            tone={adapter.adapterProofKind === ProofKind.USC_PROOF ? 'positive' : undefined}
           />
           <Fact
-            label="Proof required on-chain"
-            value={
-              policy.requireProofBacked === null
-                ? 'Unknown'
-                : policy.requireProofBacked
-                  ? 'Yes'
-                  : 'No'
-            }
-            tone={policy.requireProofBacked ? 'positive' : 'warning'}
+            label="Unproved events"
+            value="Rejected on-chain"
+            tone="positive"
+          />
+          <Fact
+            label="Proof pipeline"
+            value={isProofPipelineConfigured ? 'Configured' : 'Incomplete'}
+            tone={isProofPipelineConfigured ? 'positive' : 'warning'}
           />
           <Fact label="Configured source chain key" value={String(configuredKey)} />
         </CardBody>
@@ -121,7 +119,7 @@ export default function DeveloperPage() {
               <AddressRow label="Block prover (0x…0FD2)" address={precompiles.blockProver} />
               <AddressRow label="Chain info (0x…0FD3)" address={precompiles.chainInfo} />
               <AddressRow label="TradeFinance" address={contractAddresses.tradeFinance} />
-              <AddressRow label="Active adapter" address={adapterAddress} />
+              <AddressRow label="Active adapter" address={adapter.adapterAddress} />
               <AddressRow label="Collateral vault" address={contractAddresses.collateralVault} />
               <AddressRow label="Trade escrow" address={contractAddresses.tradeEscrow} />
               <AddressRow label="Repayment manager" address={contractAddresses.repaymentManager} />

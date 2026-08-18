@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {Test} from "forge-std/Test.sol";
 
 import {TestnetFaucet} from "../src/TestnetFaucet.sol";
-import {TestUSD} from "../src/mocks/TestUSD.sol";
+import {SettlementToken} from "../src/SettlementToken.sol";
 
 /// @notice The faucet's cooldown is enforced on-chain, so the UI cannot be tricked into showing a
 ///         request as available when the contract would reject it.
@@ -14,12 +14,12 @@ contract FaucetTest is Test {
     address internal owner = makeAddr("owner");
     address internal user = makeAddr("user");
 
-    TestUSD internal token;
+    SettlementToken internal token;
     TestnetFaucet internal faucet;
 
     function setUp() public {
         vm.startPrank(owner);
-        token = new TestUSD(owner);
+        token = new SettlementToken("TImx Settlement USD", "tUSD", owner);
         faucet = new TestnetFaucet(owner, address(token), 25_000 * USD, 12 hours);
         token.mint(owner, 1_000_000 * USD);
         token.approve(address(faucet), type(uint256).max);

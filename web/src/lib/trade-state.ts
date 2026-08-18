@@ -129,12 +129,7 @@ export function eventKindPresentation(kind: EventKindValue): EventPresentation {
   return eventPresentation[kind] ?? eventPresentation[EventKind.UNKNOWN];
 }
 
-/**
- * How to describe an attestation's provenance.
- *
- * The wording here is load-bearing. A demo-operator record is never called "verified" — it is an
- * unverified assertion, and the copy says so on every surface it appears.
- */
+/** How to describe an attestation's provenance. */
 export interface ProofPresentation {
   label: string;
   detail: string;
@@ -152,12 +147,6 @@ const proofPresentation: Record<ProofKindValue, ProofPresentation> = {
     detail:
       'Inclusion proof verified on Creditcoin by the block-prover precompile, and bound to this trade.',
     tone: 'positive',
-  },
-  [ProofKind.DEMO_OPERATOR]: {
-    label: 'Unverified — demo assertion',
-    detail:
-      'Asserted by a permissioned testnet operator. Nothing was cryptographically proven. This is not a USC proof.',
-    tone: 'warning',
   },
 };
 

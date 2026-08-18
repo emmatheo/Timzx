@@ -28,11 +28,6 @@ export const tradeFinanceAbi = [
         "name": "adapter_",
         "type": "address",
         "internalType": "contract IAttestationAdapter"
-      },
-      {
-        "name": "requireProofBacked_",
-        "type": "bool",
-        "internalType": "bool"
       }
     ],
     "stateMutability": "nonpayable"
@@ -479,38 +474,12 @@ export const tradeFinanceAbi = [
   },
   {
     "type": "function",
-    "name": "requireProofBacked",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "setAttestationAdapter",
     "inputs": [
       {
         "name": "adapter_",
         "type": "address",
         "internalType": "contract IAttestationAdapter"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setRequireProofBacked",
-    "inputs": [
-      {
-        "name": "required",
-        "type": "bool",
-        "internalType": "bool"
       }
     ],
     "outputs": [],
@@ -713,19 +682,6 @@ export const tradeFinanceAbi = [
         "type": "address",
         "indexed": true,
         "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "ProofRequirementChanged",
-    "inputs": [
-      {
-        "name": "required",
-        "type": "bool",
-        "indexed": false,
-        "internalType": "bool"
       }
     ],
     "anonymous": false

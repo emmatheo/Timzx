@@ -6,8 +6,8 @@ import {cn} from './cn';
 /**
  * Dashboard metric tile.
  *
- * `source` is required rather than optional on purpose: every number on the dashboard states where
- * it came from, so a reader always knows whether they are looking at chain state or app data.
+ * `source` is required rather than optional on purpose: every number states where it came from, so
+ * a reader always knows whether they are looking at chain state or an indexed aggregate of it.
  */
 export function StatCard({
   label,
@@ -20,7 +20,7 @@ export function StatCard({
   label: string;
   value: string;
   icon: LucideIcon;
-  source: 'On-chain' | 'Indexed' | 'Demo data';
+  source: 'On-chain' | 'Indexed';
   delta?: {value: string; direction: 'up' | 'down'};
   className?: string;
 }) {

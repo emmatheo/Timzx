@@ -7,11 +7,11 @@ import {TradeTypes} from "../TradeTypes.sol";
 /// @notice The seam between the trade-finance protocol and cross-chain verification.
 /// @dev TradeFinance never talks to a precompile directly. It asks an adapter "has this event been
 ///      established, and how?" and decides for itself whether the answer is strong enough. That
-///      indirection is what lets the demo adapter and the real USC adapter coexist behind one type
-///      without the protocol ever losing track of which one produced a given record.
+///      indirection keeps the protocol independent of how proofs are obtained, while the recorded
+///      proof kind means it can never lose track of how a given event was established.
 interface IAttestationAdapter {
     /// @notice Emitted whenever an attestation is recorded, by any adapter implementation.
-    /// @param proofKind Distinguishes a USC-proved event from a demo-operator assertion.
+    /// @param proofKind Provenance of the record. Always `USC_PROOF` for an accepted event.
     event AttestationRecorded(
         bytes32 indexed attestationId,
         uint256 indexed tradeId,

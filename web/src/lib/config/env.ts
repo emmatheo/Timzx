@@ -38,7 +38,6 @@ export const contractAddresses = {
   collateralVault: readAddress(process.env.NEXT_PUBLIC_COLLATERAL_VAULT_ADDRESS),
   tradeEscrow: readAddress(process.env.NEXT_PUBLIC_TRADE_ESCROW_ADDRESS),
   repaymentManager: readAddress(process.env.NEXT_PUBLIC_REPAYMENT_MANAGER_ADDRESS),
-  demoAdapter: readAddress(process.env.NEXT_PUBLIC_DEMO_ADAPTER_ADDRESS),
   uscAdapter: readAddress(process.env.NEXT_PUBLIC_USC_ADAPTER_ADDRESS),
   settlementToken: readAddress(process.env.NEXT_PUBLIC_SETTLEMENT_TOKEN_ADDRESS),
   faucet: readAddress(process.env.NEXT_PUBLIC_FAUCET_ADDRESS),
@@ -67,21 +66,6 @@ export const supabaseConfig = {
   anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? null,
 } as const;
 
-/**
- * Which attestation path the app should drive.
- *
- * `usc`  — build and submit real proofs through the proof API and the USC adapter.
- * `demo` — record operator assertions through the demo adapter. Cryptographically meaningless,
- *          and labelled as such everywhere it appears.
- *
- * This only chooses which contract the UI writes to. It cannot make a demo record look proved:
- * the proof kind is stamped on-chain by the adapter itself and read back from the chain.
- */
-export type AttestationMode = 'usc' | 'demo';
-
-export const attestationMode: AttestationMode =
-  process.env.NEXT_PUBLIC_ATTESTATION_MODE === 'usc' ? 'usc' : 'demo';
-
 /** True when the protocol contracts are configured and the app can transact for real. */
 export const isChainConfigured = contractAddresses.tradeFinance !== null;
 
@@ -89,8 +73,13 @@ export const isChainConfigured = contractAddresses.tradeFinance !== null;
 export const isSupabaseConfigured =
   supabaseConfig.url !== null && supabaseConfig.anonKey !== null;
 
-/** True when the real proof pipeline can be attempted. */
+/**
+ * True when a cross-chain event can actually be proved: the proof API is reachable, the adapter is
+ * deployed, and the QueryBuilder offsets the adapter reads have been pinned. All three are
+ * required — without the offsets the client refuses to submit rather than guess where in the
+ * proven bytes the fields live.
+ */
 export const isProofPipelineConfigured =
-  attestationMode === 'usc' &&
   uscConfig.proofApiUrl !== null &&
-  contractAddresses.uscAdapter !== null;
+  contractAddresses.uscAdapter !== null &&
+  contractAddresses.sourceEmitter !== null;

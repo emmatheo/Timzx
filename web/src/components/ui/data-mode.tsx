@@ -1,72 +1,47 @@
 'use client';
 
-import {FlaskConical, Radio, ShieldAlert} from 'lucide-react';
+import {Radio} from 'lucide-react';
 
 import {Badge} from './badge';
 import {cn} from './cn';
-import {attestationMode, isChainConfigured} from '@/lib/config/env';
-import {activeNetworkName} from '@/lib/config/chains';
+import {isChainConfigured} from '@/lib/config/env';
+import {activeNetworkName, creditcoin} from '@/lib/config/chains';
 
 /**
  * Provenance labelling.
  *
- * Three distinct things get shown in this product and they must never be confused: state read from
- * a chain, records the app produced without proving anything, and seed rows that exist only to
- * populate an empty marketplace. Each has its own badge and its own wording.
+ * Every figure in the product is read from a chain, so there is one origin and one badge. This
+ * exists so a reader never has to wonder where a number came from — not to distinguish real data
+ * from anything else, because there is nothing else.
  */
-export type DataOrigin = 'chain' | 'demo-attestation' | 'seed';
-
-export function DataOriginBadge({origin, className}: {origin: DataOrigin; className?: string}) {
-  if (origin === 'chain') {
-    return (
-      <Badge tone="info" icon={Radio} className={className}>
-        On-chain
-      </Badge>
-    );
-  }
-  if (origin === 'demo-attestation') {
-    return (
-      <Badge tone="warning" icon={ShieldAlert} className={className}>
-        Unverified assertion
-      </Badge>
-    );
-  }
+export function OnChainBadge({className}: {className?: string}) {
   return (
-    <Badge tone="neutral" icon={FlaskConical} className={className}>
-      Demo data
+    <Badge tone="info" icon={Radio} className={className}>
+      On-chain
     </Badge>
   );
 }
 
 /**
- * Persistent banner describing what the current deployment can and cannot prove.
- * Shown on every page of the shell, because "which mode am I in" should never require digging.
+ * Network banner.
+ *
+ * Names the network being read and says plainly when the protocol is not deployed on it, so an
+ * empty dashboard is never mistaken for a dashboard with nothing in it.
  */
-export function DeploymentBanner({className}: {className?: string}) {
-  const proving = attestationMode === 'usc';
+export function NetworkBanner({className}: {className?: string}) {
+  if (isChainConfigured) return null;
 
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border px-3 py-2 text-[12px] leading-relaxed',
-        proving
-          ? 'border-info/30 bg-info-soft text-ink-muted'
-          : 'border-warning/30 bg-warning-soft text-ink-muted',
+        'rounded-xl border border-warning/30 bg-warning-soft px-4 py-3 text-[13px] leading-relaxed text-ink-muted',
         className,
       )}
     >
-      <Badge tone={proving ? 'info' : 'warning'} icon={proving ? Radio : ShieldAlert}>
-        {proving ? 'USC proving mode' : 'Demo attestation mode'}
-      </Badge>
-      <span>
-        {proving
-          ? 'Cross-chain events are proved against the Creditcoin block-prover precompile before any trade advances.'
-          : 'Cross-chain events are asserted by a permissioned testnet operator. Nothing is cryptographically proven.'}
-      </span>
-      <span className="text-ink-subtle">
-        Network: {activeNetworkName}
-        {isChainConfigured ? '' : ' — contracts not deployed'}
-      </span>
+      <span className="font-medium text-ink">Protocol not deployed on {creditcoin.name}.</span>{' '}
+      Run the Foundry deploy script and set the contract addresses in <code>.env.local</code>.
+      Until then every view reads empty because there is nothing on-chain to read.
+      <span className="ml-1 text-ink-subtle">Network: {activeNetworkName}</span>
     </div>
   );
 }

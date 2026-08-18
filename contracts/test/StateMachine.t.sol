@@ -49,16 +49,10 @@ contract StateMachineTest is BaseTest {
 
     function test_cannotSkipShipmentAndGoStraightToDelivery() public {
         uint256 tradeId = _fundTrade();
-        vm.prank(owner);
-        bytes32 id = demoAdapter.assertEvent(
-            tradeId,
-            TradeTypes.EventKind.DELIVERY_CONFIRMED,
-            SEPOLIA_CHAIN_KEY,
-            SOURCE_HEIGHT,
-            keccak256("delivery-early"),
-            0,
-            address(emitter)
-        );
+        // A genuinely proved delivery event still cannot skip the shipment step: the proof
+        // establishes that the event happened, the state machine decides whether it may apply.
+        bytes32 id =
+            uscAdapter.submitProof(_validSubmission(tradeId, TradeTypes.EventKind.DELIVERY_CONFIRMED));
         vm.expectRevert(
             abi.encodeWithSelector(
                 TradeTypes.InvalidState.selector,
@@ -72,7 +66,7 @@ contract StateMachineTest is BaseTest {
 
     function test_cannotRepayBeforeDelivery() public {
         uint256 tradeId = _fundTrade();
-        _advanceByDemo(tradeId, TradeTypes.EventKind.SHIPMENT_CONFIRMED, 0);
+        _advanceByProof(tradeId, TradeTypes.EventKind.SHIPMENT_CONFIRMED);
 
         vm.startPrank(buyer);
         token.approve(address(repayments), FINANCING);
@@ -83,8 +77,8 @@ contract StateMachineTest is BaseTest {
 
     function test_cannotCompleteBeforeRepaid() public {
         uint256 tradeId = _fundTrade();
-        _advanceByDemo(tradeId, TradeTypes.EventKind.SHIPMENT_CONFIRMED, 0);
-        _advanceByDemo(tradeId, TradeTypes.EventKind.DELIVERY_CONFIRMED, 1);
+        _advanceByProof(tradeId, TradeTypes.EventKind.SHIPMENT_CONFIRMED);
+        _advanceByProof(tradeId, TradeTypes.EventKind.DELIVERY_CONFIRMED);
 
         vm.expectRevert();
         finance.complete(tradeId);
@@ -118,8 +112,8 @@ contract StateMachineTest is BaseTest {
 
     function test_onlyBuyerCanRepay() public {
         uint256 tradeId = _fundTrade();
-        _advanceByDemo(tradeId, TradeTypes.EventKind.SHIPMENT_CONFIRMED, 0);
-        _advanceByDemo(tradeId, TradeTypes.EventKind.DELIVERY_CONFIRMED, 1);
+        _advanceByProof(tradeId, TradeTypes.EventKind.SHIPMENT_CONFIRMED);
+        _advanceByProof(tradeId, TradeTypes.EventKind.DELIVERY_CONFIRMED);
 
         vm.startPrank(outsider);
         vm.expectRevert();

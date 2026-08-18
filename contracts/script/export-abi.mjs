@@ -13,10 +13,9 @@ const contracts = [
   ['CollateralVault', 'CollateralVault.sol'],
   ['TradeEscrow', 'TradeEscrow.sol'],
   ['RepaymentManager', 'RepaymentManager.sol'],
-  ['DemoAttestationAdapter', 'DemoAttestationAdapter.sol'],
   ['UscAttestationAdapter', 'UscAttestationAdapter.sol'],
   ['TestnetFaucet', 'TestnetFaucet.sol'],
-  ['TestUSD', 'TestUSD.sol'],
+  ['SettlementToken', 'SettlementToken.sol'],
   ['TradeEventEmitter', 'TradeEventEmitter.sol'],
 ];
 

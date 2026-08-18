@@ -25,7 +25,7 @@ import {TradeStatus} from '@/components/trade/trade-status';
 import {TradeTimeline, type TimelineEvidence} from '@/components/trade/trade-timeline';
 import {useAttestation} from '@/hooks/use-attestation';
 import {useAttestationLog} from '@/hooks/use-attestation-log';
-import {useAttestationPolicy, useTrade} from '@/hooks/use-protocol';
+import {useAttestationAdapter, useTrade} from '@/hooks/use-protocol';
 import {useTradeActions} from '@/hooks/use-trade-actions';
 import {useTradeViews} from '@/hooks/use-trade-views';
 import {creditcoin, explorerAddressUrl} from '@/lib/config/chains';
@@ -39,7 +39,7 @@ import {
 } from '@/lib/finance';
 import {formatDate, formatMoney, formatPercent, parseMoneyInput, shortenAddress} from '@/lib/format';
 import {proofKindPresentation} from '@/lib/trade-state';
-import {EventKind, TradeState, type TradeStateValue} from '@/types/trade';
+import {EventKind, TradeState, type ProofKindValue, type TradeStateValue} from '@/types/trade';
 
 export default function TradeDetailPage({params}: {params: Promise<{id: string}>}) {
   const {id} = use(params);
@@ -57,7 +57,7 @@ export default function TradeDetailPage({params}: {params: Promise<{id: string}>
   const {entries: attestations, refetch: refetchLog} = useAttestationLog({
     tradeId: tradeId ?? undefined,
   });
-  const policy = useAttestationPolicy();
+  const adapter = useAttestationAdapter();
 
   const refreshAll = async () => {
     await refetch();
@@ -229,29 +229,25 @@ export default function TradeDetailPage({params}: {params: Promise<{id: string}>
                   <span className="text-[12px] tracking-wide text-ink-subtle uppercase">
                     Active adapter
                   </span>
-                  <Badge tone={proofKindPresentation(policy.adapterProofKind as 0 | 1 | 2).tone}>
-                    {proofKindPresentation(policy.adapterProofKind as 0 | 1 | 2).label}
+                  <Badge tone={proofKindPresentation(adapter.adapterProofKind as ProofKindValue).tone}>
+                    {proofKindPresentation(adapter.adapterProofKind as ProofKindValue).label}
                   </Badge>
                 </div>
                 <p className="mt-2 text-[12.5px] leading-relaxed text-ink-muted">
-                  {proofKindPresentation(policy.adapterProofKind as 0 | 1 | 2).detail}
+                  {proofKindPresentation(adapter.adapterProofKind as ProofKindValue).detail}
                 </p>
-                {policy.adapterAddress ? (
+                {adapter.adapterAddress ? (
                   <div className="mt-2">
                     <Copyable
-                      value={policy.adapterAddress}
-                      display={shortenAddress(policy.adapterAddress)}
-                      href={explorerAddressUrl(creditcoin.id, policy.adapterAddress)}
+                      value={adapter.adapterAddress}
+                      display={shortenAddress(adapter.adapterAddress)}
+                      href={explorerAddressUrl(creditcoin.id, adapter.adapterAddress)}
                     />
                   </div>
                 ) : null}
                 <p className="mt-2 text-[12px] text-ink-subtle">
-                  Proof required on-chain:{' '}
-                  {policy.requireProofBacked === null
-                    ? 'unknown'
-                    : policy.requireProofBacked
-                      ? 'yes — demo assertions are rejected'
-                      : 'no — demo assertions are accepted on this deployment'}
+                  An event this pipeline cannot prove cannot move this trade. The protocol accepts
+                  no other provenance.
                 </p>
               </div>
 

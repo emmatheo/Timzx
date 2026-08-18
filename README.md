@@ -27,29 +27,31 @@ This is the part most hackathon projects fudge. TImx does not.
 
 | Layer | Status |
 |---|---|
-| Trade lifecycle state machine | **Real.** 12-state enum, invalid transitions revert. 49 passing tests. |
+| Trade lifecycle state machine | **Real.** 12-state enum, invalid transitions revert. 47 passing tests. |
 | Collateral, escrow, repayment, default | **Real.** SafeERC20, ReentrancyGuard, controller-gated. |
-| Faucet, token, credit record | **Real** on-chain contracts. |
-| USC proof verification (`UscAttestationAdapter`) | **Real code** against the real precompile interfaces, tested against mocks. Not yet exercised against a live Creditcoin node. |
+| Faucet, settlement token, credit record | **Real** on-chain contracts. |
+| Documents, messages, trade metadata | **Real** Supabase persistence behind wallet-signature auth. |
+| USC proof verification (`UscAttestationAdapter`) | **Real code** against the real precompile interfaces, tested against test doubles. Not yet exercised against a live Creditcoin node. |
 | QueryBuilder field offsets | **Deliberately unimplemented.** See below. |
-| Demo attestations | **Real transactions**, but nothing is proven — and every one is stamped `DEMO_OPERATOR` on-chain. |
 
 ### The honesty mechanism
 
 The rule "do not pretend an API request is an Attestcoin proof" is enforced by the contracts, not
 by discipline:
 
-- `TradeTypes.ProofKind` has exactly two non-null values: `USC_PROOF` and `DEMO_OPERATOR`.
-- The **adapter stamps it**, not the caller. `DemoAttestationAdapter` can only ever write
-  `DEMO_OPERATOR`; `UscAttestationAdapter` only writes `USC_PROOF`, and only after
-  `INativeQueryVerifier.verify` returns true.
-- `TradeFinance.requireProofBacked` — when set, a demo attestation is **rejected on-chain**. A
-  production deployment turns this on and the demo path becomes inert.
+- `TradeTypes.ProofKind` has exactly **one** non-null value: `USC_PROOF`. There is no
+  operator-asserted variant to fall back to.
+- The **adapter stamps it**, not the caller, and only after `INativeQueryVerifier.verify` returns
+  true.
+- `TradeFinance` rejects any attestation that is not `USC_PROOF`, unconditionally. There is no
+  configuration that relaxes this.
+- `setAttestationAdapter` refuses an adapter that reports a different proof kind, so the guarantee
+  cannot be swapped out either.
 - The UI reads proof kind **back from the chain** after every attestation. A misconfigured frontend
-  cannot label an unproven record as verified, because it never decides.
+  cannot mislabel anything, because it never decides.
 
-Demo records are labelled *"Unverified — demo assertion"* everywhere they appear. Never "pending",
-never "verified".
+There is no demo mode, no seeded catalogue and no example data anywhere in the product. A trade
+appears because it exists on Creditcoin.
 
 ### The one thing that is not finished
 
@@ -93,8 +95,8 @@ TradeEventEmitter
 | `CollateralVault.sol` | Buyer collateral. Three exits: released, seized, refunded. No owner withdrawal. |
 | `TradeEscrow.sol` | Financier capital between commitment and disbursement. |
 | `RepaymentManager.sol` | Obligation tracking. Overpayment is clamped, not refunded. |
-| `UscAttestationAdapter.sol` | Proof verification + binding proven bytes to a trade. |
-| `DemoAttestationAdapter.sol` | Operator assertions. Testnet only. Stamps `DEMO_OPERATOR`. |
+| `UscAttestationAdapter.sol` | Proof verification + binding proven bytes to a trade. The only adapter. |
+| `SettlementToken.sol` | ERC-20 the protocol settles in. Deploy only where no stablecoin exists. |
 | `TradeEventEmitter.sol` | Deployed on the **source** chain. Origin of cross-chain events. |
 | `TestnetFaucet.sol` | On-chain cooldown so the UI cannot show a request the chain would reject. |
 
@@ -114,8 +116,8 @@ hooks/                      chain reads (multicall) and write paths (simulate-th
 components/                 design system + trade, attestation, shell
 ```
 
-Three separately-labelled data origins, never blended: **on-chain**, **unverified assertion**,
-**demo data**.
+Writes to Supabase go through route handlers under `src/app/api` that verify a wallet signature
+first; the anon key shipped to the browser is read-only by row level security.
 
 ---
 
@@ -132,7 +134,7 @@ Creditcoin testnet CTC for gas.
 cd contracts
 ./setup.sh                   # installs forge-std and OpenZeppelin into lib/
 forge build --root .
-forge test --root .          # 49 tests
+forge test --root .          # 47 tests
 ```
 
 `--root .` matters: `foundry.toml` lives in `contracts/`, but Foundry walks up to the git root
@@ -161,10 +163,11 @@ Regenerate frontend ABIs after any Solidity change:
 node script/export-abi.mjs
 ```
 
-### 2. Database (optional)
+### 2. Database
 
-Run `supabase/schema.sql` in the Supabase SQL editor. The app runs on-chain-only without it —
-trade titles degrade to `Trade #n`, nothing else changes.
+Run `supabase/schema.sql` in the Supabase SQL editor, then set both the public Supabase variables
+and the two server-only secrets (`SUPABASE_SERVICE_ROLE_KEY`, `SESSION_SECRET`). Without them the
+chain-backed views still work, but documents, messages and sign-in do not.
 
 ### 3. Frontend
 

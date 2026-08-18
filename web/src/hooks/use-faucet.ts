@@ -3,7 +3,7 @@
 import {useCallback, useState} from 'react';
 import {useAccount, useBalance, usePublicClient, useReadContracts, useWalletClient} from 'wagmi';
 
-import {testUSDAbi, testnetFaucetAbi} from '@/lib/abi';
+import {settlementTokenAbi, testnetFaucetAbi} from '@/lib/abi';
 import {creditcoin, explorerTxUrl} from '@/lib/config/chains';
 import {contractAddresses} from '@/lib/config/env';
 import {useToast} from '@/components/ui/toast';
@@ -57,7 +57,7 @@ export function useFaucet() {
             } as const,
             {
               address: token,
-              abi: testUSDAbi,
+              abi: settlementTokenAbi,
               chainId: creditcoin.id,
               functionName: 'balanceOf',
               args: [faucet],

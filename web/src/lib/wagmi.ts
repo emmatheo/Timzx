@@ -7,8 +7,8 @@ import {creditcoinDevnet, creditcoinTestnet, sourceChain} from '@/lib/config/cha
  * Wallet configuration.
  *
  * Injected connectors only. A hosted connector (WalletConnect, Coinbase) needs a project id and an
- * external relay, which would be one more thing to misconfigure at demo time for no benefit —
- * MetaMask and every browser wallet expose an injected provider.
+ * external relay, which is one more thing to misconfigure for no benefit here — MetaMask and
+ * every browser wallet expose an injected provider.
  *
  * `injected` is imported from `@wagmi/core` rather than the `wagmi/connectors` barrel: that barrel
  * pulls in the Base account connector, whose optional x402 dependencies are unresolvable and break
