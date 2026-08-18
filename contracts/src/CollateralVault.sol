@@ -38,11 +38,7 @@ contract CollateralVault is ProtocolModule, ReentrancyGuard {
     /// @dev `from` must have approved this vault. Requiring approval to the vault rather than to
     ///      TradeFinance keeps the token allowance scoped to the contract that actually custodies
     ///      the funds.
-    function lock(uint256 tradeId, address from, uint256 amount)
-        external
-        onlyController
-        nonReentrant
-    {
+    function lock(uint256 tradeId, address from, uint256 amount) external onlyController nonReentrant {
         if (amount == 0) revert TradeTypes.ZeroAmount();
         if (lockedOf[tradeId] != 0) revert AlreadyLocked(tradeId);
 

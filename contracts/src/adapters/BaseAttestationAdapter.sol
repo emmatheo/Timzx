@@ -41,10 +41,7 @@ abstract contract BaseAttestationAdapter is IAttestationAdapter, Ownable {
     }
 
     /// @notice Allow or disallow a source-chain contract to originate trade events.
-    function setTrustedEmitter(uint64 sourceChainKey, address emitter, bool trusted)
-        external
-        onlyOwner
-    {
+    function setTrustedEmitter(uint64 sourceChainKey, address emitter, bool trusted) external onlyOwner {
         if (emitter == address(0)) revert TradeTypes.ZeroAddress();
         trustedEmitter[sourceChainKey][emitter] = trusted;
         emit EmitterTrustSet(sourceChainKey, emitter, trusted);

@@ -27,10 +27,7 @@ contract AttestationTest is BaseTest {
 
     function _fields() internal pure returns (UscAttestationAdapter.QueryFields memory) {
         return UscAttestationAdapter.QueryFields({
-            rxStatus: OFF_RX_STATUS,
-            logAddress: OFF_LOG_ADDRESS,
-            topic0: OFF_TOPIC0,
-            tradeId: OFF_TRADE_ID
+            rxStatus: OFF_RX_STATUS, logAddress: OFF_LOG_ADDRESS, topic0: OFF_TOPIC0, tradeId: OFF_TRADE_ID
         });
     }
 
@@ -56,12 +53,10 @@ contract AttestationTest is BaseTest {
         s.logIndex = 0;
         s.encodedTransaction = encoded;
         s.merkleProof = INativeQueryVerifier.MerkleProof({
-            root: keccak256("root"),
-            siblings: new INativeQueryVerifier.MerkleProofEntry[](0)
+            root: keccak256("root"), siblings: new INativeQueryVerifier.MerkleProofEntry[](0)
         });
         s.continuityProof = INativeQueryVerifier.ContinuityProof({
-            lowerEndpointDigest: keccak256("lower"),
-            roots: new bytes32[](0)
+            lowerEndpointDigest: keccak256("lower"), roots: new bytes32[](0)
         });
         s.fields = _fields();
     }
@@ -109,9 +104,7 @@ contract AttestationTest is BaseTest {
     function test_uscAttestationIsLabelledProved() public {
         uint256 tradeId = _fundTrade();
         bytes32 id = uscAdapter.submitProof(_validSubmission(tradeId));
-        assertEq(
-            uint8(uscAdapter.getAttestation(id).proofKind), uint8(TradeTypes.ProofKind.USC_PROOF)
-        );
+        assertEq(uint8(uscAdapter.getAttestation(id).proofKind), uint8(TradeTypes.ProofKind.USC_PROOF));
     }
 
     // -----------------------------------------------------------------
@@ -195,9 +188,7 @@ contract AttestationTest is BaseTest {
             _encodedTx(1, address(emitter), _topicShipment(), tradeId + 77)
         );
         vm.expectRevert(
-            abi.encodeWithSelector(
-                UscAttestationAdapter.TradeIdMismatch.selector, tradeId, tradeId + 77
-            )
+            abi.encodeWithSelector(UscAttestationAdapter.TradeIdMismatch.selector, tradeId, tradeId + 77)
         );
         uscAdapter.submitProof(s);
     }
@@ -206,14 +197,10 @@ contract AttestationTest is BaseTest {
         uint256 tradeId = _fundTrade();
         address rogue = makeAddr("rogueEmitter");
         UscAttestationAdapter.ProofSubmission memory s = _submission(
-            tradeId,
-            TradeTypes.EventKind.SHIPMENT_CONFIRMED,
-            _encodedTx(1, rogue, _topicShipment(), tradeId)
+            tradeId, TradeTypes.EventKind.SHIPMENT_CONFIRMED, _encodedTx(1, rogue, _topicShipment(), tradeId)
         );
         vm.expectRevert(
-            abi.encodeWithSelector(
-                BaseAttestationAdapter.UntrustedEmitter.selector, SEPOLIA_CHAIN_KEY, rogue
-            )
+            abi.encodeWithSelector(BaseAttestationAdapter.UntrustedEmitter.selector, SEPOLIA_CHAIN_KEY, rogue)
         );
         uscAdapter.submitProof(s);
     }
@@ -231,9 +218,7 @@ contract AttestationTest is BaseTest {
         s.sourceHeight = SOURCE_HEIGHT + 1; // never marked attested
         vm.expectRevert(
             abi.encodeWithSelector(
-                UscAttestationAdapter.HeightNotAttested.selector,
-                SEPOLIA_CHAIN_KEY,
-                SOURCE_HEIGHT + 1
+                UscAttestationAdapter.HeightNotAttested.selector, SEPOLIA_CHAIN_KEY, SOURCE_HEIGHT + 1
             )
         );
         uscAdapter.submitProof(s);
@@ -274,9 +259,7 @@ contract AttestationTest is BaseTest {
         uint256 tradeId = _fundTrade();
         bytes32 id = _advanceByDemo(tradeId, TradeTypes.EventKind.SHIPMENT_CONFIRMED, 0);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(TradeFinance.AttestationAlreadyApplied.selector, id)
-        );
+        vm.expectRevert(abi.encodeWithSelector(TradeFinance.AttestationAlreadyApplied.selector, id));
         finance.advanceWithAttestation(tradeId, id);
     }
 
@@ -315,8 +298,7 @@ contract AttestationTest is BaseTest {
         vm.prank(owner);
         vm.expectRevert(
             abi.encodeWithSelector(
-                BaseAttestationAdapter.TopicNotRegistered.selector,
-                TradeTypes.EventKind.REPAYMENT_SETTLED
+                BaseAttestationAdapter.TopicNotRegistered.selector, TradeTypes.EventKind.REPAYMENT_SETTLED
             )
         );
         demoAdapter.assertEvent(
@@ -333,9 +315,7 @@ contract AttestationTest is BaseTest {
     function test_onlyOperatorCanAssertDemoEvents() public {
         uint256 tradeId = _fundTrade();
         vm.prank(outsider);
-        vm.expectRevert(
-            abi.encodeWithSelector(DemoAttestationAdapter.NotOperator.selector, outsider)
-        );
+        vm.expectRevert(abi.encodeWithSelector(DemoAttestationAdapter.NotOperator.selector, outsider));
         demoAdapter.assertEvent(
             tradeId,
             TradeTypes.EventKind.SHIPMENT_CONFIRMED,

@@ -23,10 +23,7 @@ interface IAttestationAdapter {
 
     /// @notice Fetch a recorded attestation.
     /// @dev Returns a zeroed struct (`proofKind == NONE`) when `attestationId` is unknown.
-    function getAttestation(bytes32 attestationId)
-        external
-        view
-        returns (TradeTypes.Attestation memory);
+    function getAttestation(bytes32 attestationId) external view returns (TradeTypes.Attestation memory);
 
     /// @notice Whether `attestationId` has been recorded by this adapter.
     function isRecorded(bytes32 attestationId) external view returns (bool);

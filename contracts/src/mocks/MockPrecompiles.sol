@@ -16,9 +16,7 @@ contract MockChainInfo is IChainInfo {
     /// @dev `chainKey => height => attested`.
     mapping(uint64 => mapping(uint64 => bool)) internal _attested;
 
-    function addChain(uint64 chainKey, uint64 chainId, string calldata name, uint8 encoding)
-        external
-    {
+    function addChain(uint64 chainKey, uint64 chainId, string calldata name, uint8 encoding) external {
         if (!_known[chainKey]) _keys.push(chainKey);
         _known[chainKey] = true;
         _chains[chainKey] = ChainInfo(chainKey, chainId, bytes(name), encoding);

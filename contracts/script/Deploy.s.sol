@@ -53,8 +53,7 @@ contract Deploy is Script {
         IAttestationAdapter active =
             useUsc ? IAttestationAdapter(address(usc)) : IAttestationAdapter(address(demo));
 
-        TradeFinance finance =
-            new TradeFinance(deployer, vault, escrow, repayments, active, requireProof);
+        TradeFinance finance = new TradeFinance(deployer, vault, escrow, repayments, active, requireProof);
 
         vault.setController(address(finance));
         escrow.setController(address(finance));
@@ -62,8 +61,7 @@ contract Deploy is Script {
 
         _configure(demo, usc, sourceChainKey, sourceEmitter);
 
-        TestnetFaucet faucet =
-            new TestnetFaucet(deployer, address(token), 250_000 * USD, 12 hours);
+        TestnetFaucet faucet = new TestnetFaucet(deployer, address(token), 250_000 * USD, 12 hours);
         token.mint(address(faucet), 100_000_000 * USD);
 
         vm.stopBroadcast();

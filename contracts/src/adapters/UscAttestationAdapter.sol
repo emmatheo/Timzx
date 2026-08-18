@@ -76,9 +76,8 @@ contract UscAttestationAdapter is BaseAttestationAdapter {
     constructor(address initialOwner, address verifier_, address chainInfo_)
         BaseAttestationAdapter(initialOwner)
     {
-        verifier = verifier_ == address(0)
-            ? NativeQueryVerifierLib.getVerifier()
-            : INativeQueryVerifier(verifier_);
+        verifier =
+            verifier_ == address(0) ? NativeQueryVerifierLib.getVerifier() : INativeQueryVerifier(verifier_);
         chainInfo = chainInfo_ == address(0) ? ChainInfoLib.getChainInfo() : IChainInfo(chainInfo_);
     }
 
@@ -105,11 +104,7 @@ contract UscAttestationAdapter is BaseAttestationAdapter {
 
         // 2. Prove inclusion of the transaction in the attested block.
         bool ok = verifier.verify(
-            s.sourceChainKey,
-            s.sourceHeight,
-            s.encodedTransaction,
-            s.merkleProof,
-            s.continuityProof
+            s.sourceChainKey, s.sourceHeight, s.encodedTransaction, s.merkleProof, s.continuityProof
         );
         if (!ok) revert InclusionProofFailed();
 

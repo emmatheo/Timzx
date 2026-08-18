@@ -231,10 +231,7 @@ contract TradeFinance is Ownable, ReentrancyGuard {
             metadataHash
         );
         emit TradeStateChanged(
-            tradeId,
-            TradeTypes.TradeState.APPLICATION,
-            TradeTypes.TradeState.APPLICATION,
-            msg.sender
+            tradeId, TradeTypes.TradeState.APPLICATION, TradeTypes.TradeState.APPLICATION, msg.sender
         );
     }
 
@@ -293,9 +290,8 @@ contract TradeFinance is Ownable, ReentrancyGuard {
         }
 
         uint256 amount = escrow.releaseToSupplier(tradeId, t.supplier);
-        (, uint64 maturityAt) = repayments.open(
-            tradeId, t.financier, t.terms.financing, t.terms.interestBps, t.terms.termDays
-        );
+        (, uint64 maturityAt) =
+            repayments.open(tradeId, t.financier, t.terms.financing, t.terms.interestBps, t.terms.termDays);
 
         t.fundedAt = uint64(block.timestamp);
         t.maturityAt = maturityAt;
@@ -342,9 +338,7 @@ contract TradeFinance is Ownable, ReentrancyGuard {
     function repay(uint256 tradeId, uint256 amount) external nonReentrant {
         TradeTypes.Trade storage t = _mustExist(tradeId);
         _assertParty(t, TradeTypes.Party.BUYER);
-        if (
-            t.state != TradeTypes.TradeState.DELIVERED && t.state != TradeTypes.TradeState.REPAYING
-        ) {
+        if (t.state != TradeTypes.TradeState.DELIVERED && t.state != TradeTypes.TradeState.REPAYING) {
             revert TradeTypes.InvalidState(tradeId, t.state, TradeTypes.TradeState.DELIVERED);
         }
         if (amount == 0) revert NothingToRepay();
@@ -353,8 +347,7 @@ contract TradeFinance is Ownable, ReentrancyGuard {
         _credit[msg.sender].volumeRepaid += applied;
 
         if (outstandingAfter == 0) {
-            _credit[msg.sender].cumulativeRepaymentDays +=
-                uint64((block.timestamp - t.fundedAt) / 1 days);
+            _credit[msg.sender].cumulativeRepaymentDays += uint64((block.timestamp - t.fundedAt) / 1 days);
             _setState(t, TradeTypes.TradeState.REPAID);
         } else if (t.state != TradeTypes.TradeState.REPAYING) {
             _setState(t, TradeTypes.TradeState.REPAYING);
@@ -387,8 +380,7 @@ contract TradeFinance is Ownable, ReentrancyGuard {
         }
         if (
             t.state != TradeTypes.TradeState.FUNDED && t.state != TradeTypes.TradeState.SHIPPED
-                && t.state != TradeTypes.TradeState.DELIVERED
-                && t.state != TradeTypes.TradeState.REPAYING
+                && t.state != TradeTypes.TradeState.DELIVERED && t.state != TradeTypes.TradeState.REPAYING
         ) {
             revert TradeTypes.InvalidState(tradeId, t.state, TradeTypes.TradeState.REPAYING);
         }
