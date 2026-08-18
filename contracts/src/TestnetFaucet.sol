@@ -46,6 +46,7 @@ contract TestnetFaucet is Ownable, ReentrancyGuard {
         uint64 last = lastRequestAt[account];
         if (last == 0) return 0;
         uint64 next = last + cooldown;
+        // Cooldown is measured in hours; a few seconds either way is not worth a safer clock.
         return next > block.timestamp ? next : 0;
     }
 

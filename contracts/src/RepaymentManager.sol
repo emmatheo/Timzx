@@ -129,6 +129,8 @@ contract RepaymentManager is ProtocolModule, ReentrancyGuard {
     function isOverdue(uint256 tradeId) external view returns (bool) {
         Obligation storage o = _obligations[tradeId];
         if (!o.opened) return false;
+        // Maturity is `termDays` away — 60 to 180 days in practice. The seconds of drift a
+        // validator controls cannot move an obligation across that boundary.
         return block.timestamp > o.maturityAt && o.repaid < o.totalDue;
     }
 }

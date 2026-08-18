@@ -36,11 +36,26 @@ jobs:
 
       # `--root .` is required throughout: foundry.toml lives in contracts/, but Foundry walks up
       # to the git root without it and fails to resolve remappings.
+      #
+      # Deliberately not `--deny-warnings`. That flag folds `forge lint` into the build gate, and
+      # the lint rule set changes between Foundry releases: the `block-timestamp` rule does not
+      # exist in 1.5.x but fails the build on current stable, while older Foundry versions reject
+      # an `exclude_lints` entry naming a rule they do not know. Gating the build on it would mean
+      # CI passing or failing based on which Foundry a contributor happens to have. Compiler
+      # warnings still surface in the log, and lint runs below as an advisory step.
       - name: Build
-        run: forge build --root . --deny-warnings
+        run: forge build --root .
 
       - name: Test
         run: forge test --root . -vvv
+
+      # Advisory. Findings are visible in the job output without gating the pipeline on a rule set
+      # that shifts underneath the project. Reviewed as of this commit: the only findings are
+      # `block-timestamp` at three sites, all comparing against horizons of hours to months, where
+      # the seconds of drift a validator controls cannot change the outcome.
+      - name: Lint (advisory)
+        continue-on-error: true
+        run: forge lint --root .
 
       - name: Check formatting
         run: forge fmt --root . --check

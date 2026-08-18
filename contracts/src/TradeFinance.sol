@@ -384,6 +384,9 @@ contract TradeFinance is Ownable, ReentrancyGuard {
         ) {
             revert TradeTypes.InvalidState(tradeId, t.state, TradeTypes.TradeState.REPAYING);
         }
+        // Same multi-month horizon as `RepaymentManager.isOverdue`; timestamp drift is
+        // immaterial at this scale, and a block-number clock would drift worse against a term
+        // denominated in calendar days.
         if (block.timestamp <= t.maturityAt) revert NotMatured(t.maturityAt);
 
         uint256 owed = repayments.outstanding(tradeId);
