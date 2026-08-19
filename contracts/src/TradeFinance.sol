@@ -291,10 +291,10 @@ contract TradeFinance is Ownable, ReentrancyGuard {
 
     /// @notice Advance a trade using a cross-chain event recorded by the attestation adapter.
     /// @dev Permissionless. The submitter's identity is irrelevant because every property that
-    ///      matters is read back from the adapter's record, and — in the USC adapter — was itself
-    ///      established by verifying a proof against the block-prover precompile.
-    /// @param attestationId Id returned by `UscAttestationAdapter.submitProof` or, on a testnet
-    ///        deployment, `DemoAttestationAdapter.assertEvent`.
+    ///      matters is read back from the adapter's record, and was itself established by verifying
+    ///      a proof against the block-prover precompile.
+    /// @param attestationId Id returned by `UscAttestationAdapter.submitProof`, the only way an
+    ///        attestation comes into existence.
     function advanceWithAttestation(uint256 tradeId, bytes32 attestationId) external {
         TradeTypes.Trade storage t = _mustExist(tradeId);
         TradeTypes.Attestation memory a = _consumeAttestation(tradeId, attestationId);
