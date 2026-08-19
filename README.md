@@ -67,6 +67,130 @@ to prevent — so guessing is worse than failing. Offsets can be pinned via
 
 ---
 
+## Attestcoin Protocol integration
+
+This section is the technical documentation of how the protocol uses Creditcoin's Universal Smart
+Contracts. It describes what the code does, not what it aspires to.
+
+### Why this needs Creditcoin specifically
+
+A shipment is a physical fact recorded on a different chain. Every other way of getting that fact
+into a trade-finance contract introduces someone to trust: a bridge, an oracle committee, a relayer
+with a signing key, or an operator pressing a button. Creditcoin's attestor set attests source-chain
+blocks, and the **block-prover precompile verifies a Merkle plus continuity proof on-chain, inside
+the same transaction that advances the trade**. The trust assumption collapses into the attestor
+set — there is no additional trusted party bolted on by this project.
+
+### The two precompiles used
+
+| Precompile | Address | Calls used | Purpose here |
+|---|---|---|---|
+| ChainInfo | `0x…0fD3` | `get_chain_by_key`, `is_height_attested`, `get_supported_chains` | Confirm the source chain is tracked and its height already attested |
+| Block prover / native query verifier | `0x…0FD2` | `verify` | Verify inclusion of the source transaction in the attested block |
+
+`get_supported_chains` is also read by the Developer page at runtime. **`chainKey` is not `chainId`** —
+they are different numbers and the mapping differs per Creditcoin environment, so the key is
+configuration validated against the precompile, never a hardcoded constant.
+
+### The path an event takes
+
+```
+Sepolia                          Off-chain                    Creditcoin
+───────────────────────          ─────────────────            ────────────────────────────────
+TradeEventEmitter
+  ShipmentConfirmed(tradeId,…)
+        │
+        │ attestor set attests the block containing it
+        │
+        └─► proof API ───────────► inclusion proof   ──►  UscAttestationAdapter.submitProof
+            /api/v1/proof-by-tx/       + continuity            │
+            {chainKey}/{txHash}          proof                 │ 1. get_chain_by_key    → exists?
+                                                               │ 2. is_height_attested  → attested?
+                                                               │ 3. verify(...)         → included?
+                                                               │ 4. bind proven fields  → is it THIS event?
+                                                               ▼
+                                                         attestation recorded, ProofKind.USC_PROOF
+                                                               │
+                                                               ▼
+                                                    TradeFinance.advanceWithAttestation
+                                                         FUNDED ──► SHIPPED
+```
+
+### Step 4 is the part most integrations skip
+
+An inclusion proof proves that *some* transaction was in the block. It does not prove *what the
+transaction contained*. Acting on inclusion alone would let anyone advance a trade by proving any
+unrelated transaction from the same block.
+
+So after `verify()` returns true, `_bindProvenFields` reads four 32-byte words **out of the same
+calldata buffer the proof covered** and checks each one:
+
+| Field | Check | Revert if wrong |
+|---|---|---|
+| receipt status | must be `1` | `SourceTransactionReverted` |
+| `topic0` | must equal the registered topic for the claimed event kind | `TopicMismatch` / `TopicNotRegistered` |
+| trade id | must equal the trade being advanced | `TradeIdMismatch` |
+| log address | must be a registered trusted emitter for that chain key | `UntrustedEmitter` |
+
+Word loads are bounds-checked (`FieldOutOfRange`) and the address word is rejected if its high
+bytes are dirty rather than silently truncated. Replay is prevented twice: the attestation id is
+`keccak(chainKey, sourceTxHash, logIndex)` and cannot be recorded twice, and `TradeFinance` marks
+each attestation consumed so one source event cannot advance two trades.
+
+### Why an unproved event cannot move a trade
+
+Not by convention — by construction:
+
+- `TradeTypes.ProofKind` has exactly **one** non-null value, `USC_PROOF`. There is no
+  operator-asserted variant to fall back to.
+- The **adapter stamps it**, never the caller, and only after `verify()` has returned true.
+- `TradeFinance._consumeAttestation` rejects anything else unconditionally —
+  `if (a.proofKind != ProofKind.USC_PROOF) revert ProofRequired();` — with no flag that relaxes it.
+- `setAttestationAdapter` refuses an adapter reporting any other proof kind, so the guarantee
+  cannot be swapped out later.
+- `UscAttestationAdapter.submitProof` is the **only** external function anywhere that creates an
+  attestation; `_record` is `internal`.
+- The UI reads proof kind back from the chain, so a misconfigured frontend cannot mislabel
+  anything — it never decides.
+
+`submitProof` is permissionless on purpose. Nothing depends on who submits, only on whether the
+proof verifies, so a relayer, the buyer or a financier can all submit and none of them can submit
+anything false.
+
+### What is not yet proven end-to-end
+
+`SdkFieldOffsetResolver` throws instead of returning the QueryBuilder offsets that step 4 reads.
+Those come from `QueryBuilder.build()` in the gluwa usc-sdk, computed against the same
+`abiEncode(tx, receipt)` buffer the proof covers, and they depend on the source chain's
+`chainEncoding`. A wrong offset would bind a valid proof to the wrong bytes — the exact failure
+step 4 exists to prevent — so the resolver fails loudly rather than guessing. Pin them with
+`NEXT_PUBLIC_QUERY_OFFSET_*` once computed and `StaticFieldOffsetResolver` takes over; the rest of
+the path is already wired.
+
+---
+
+## Deployment status
+
+**NOT DEPLOYED.** No contract in this repository is deployed to Creditcoin testnet, devnet, or any
+public network at this commit. The only deployments performed so far were to a local anvil node for
+end-to-end verification, and `contracts/deployments/31337.json` is gitignored for that reason.
+
+Once deployed, the script writes `contracts/deployments/<chainid>.json` and that file is committed.
+The table below is filled in from it.
+
+| Contract | Network | Address |
+|---|---|---|
+| TradeFinance | Creditcoin testnet (102031) | _not deployed_ |
+| CollateralVault | Creditcoin testnet (102031) | _not deployed_ |
+| TradeEscrow | Creditcoin testnet (102031) | _not deployed_ |
+| RepaymentManager | Creditcoin testnet (102031) | _not deployed_ |
+| UscAttestationAdapter | Creditcoin testnet (102031) | _not deployed_ |
+| SettlementToken | Creditcoin testnet (102031) | _not deployed_ |
+| TestnetFaucet | Creditcoin testnet (102031) | _not deployed_ |
+| TradeEventEmitter | Ethereum Sepolia (11155111) | _not deployed_ |
+
+---
+
 ## Architecture
 
 ```
@@ -125,8 +249,9 @@ first; the anon key shipped to the browser is read-only by row level security.
 
 ### Prerequisites
 
-Node 20+, [Foundry](https://book.getfoundry.sh/getting-started/installation), a wallet with
-Creditcoin testnet CTC for gas.
+Node 20+, [Foundry](https://book.getfoundry.sh/getting-started/installation), and one funded key
+with **both** Creditcoin testnet CTC and Sepolia ETH — the deploy touches two chains, and the
+Sepolia leg must go first.
 
 ### 1. Contracts
 
@@ -140,22 +265,46 @@ forge test --root .          # 47 tests
 `--root .` matters: `foundry.toml` lives in `contracts/`, but Foundry walks up to the git root
 without it and fails to resolve remappings.
 
-Deploy:
+Deploy to Creditcoin testnet — two transactions on two different chains, in this order:
 
 ```bash
-cp .env.example .env         # fill in PRIVATE_KEY
+cp .env.example .env         # fill in PRIVATE_KEY, leave SOURCE_EMITTER blank for now
 set -a && source .env && set +a
 
-# Source chain first — this address is what the adapters trust.
-forge script script/Deploy.s.sol:DeployEmitter --root . \
+# 1. Source chain (Sepolia) first. Its address is the only emitter the adapter will trust,
+#    so nothing on Creditcoin can be deployed correctly before it exists.
+EXPECTED_CHAIN_ID=11155111 forge script script/Deploy.s.sol:DeployEmitter --root . \
   --rpc-url "$SOURCE_RPC_URL" --broadcast
 
-# Then Creditcoin, with SOURCE_EMITTER set from the previous step.
+# 2. Put the printed SOURCE_EMITTER into .env, re-source, then deploy to Creditcoin.
 forge script script/Deploy.s.sol:Deploy --root . \
   --rpc-url "$CREDITCOIN_RPC_URL" --broadcast
 ```
 
-The script prints every address as a `NEXT_PUBLIC_*` line — paste straight into `web/.env.local`.
+Step 2 runs three preflight checks before creating a single contract, and aborts rather than
+leaving a half-usable protocol on chain:
+
+| Check | Aborts with | Catches |
+|---|---|---|
+| `block.chainid == EXPECTED_CHAIN_ID` | `WrongChain(expected, actual)` | a mistyped `--rpc-url` deploying onto a chain with no Creditcoin precompiles |
+| ChainInfo precompile responds | `ChainInfoUnavailable(0x…0fD3)` | a chain that is not a Creditcoin USC network, where the protocol would be inert |
+| `SOURCE_CHAIN_KEY` is tracked | `SourceChainNotSupported(key)` | the chainKey-is-not-chainId trap |
+| `SOURCE_EMITTER` set | `SourceEmitterRequired()` | a protocol where no proof can ever bind to a trade |
+
+The last two preflights are skipped on chain id 31337 only, where the precompiles do not exist by
+definition. That skip relaxes a *deployment diagnostic* and nothing else: the proof requirement in
+`TradeFinance` is unconditional on every chain, so a trade still cannot pass `FUNDED` on a local
+node.
+
+After deploying, the script asserts its own wiring — controllers bound, adapter installed, proof
+kind `USC_PROOF`, all three topics registered, emitter trusted — and reverts with
+`WiringFailed("what")` if any of it is wrong. A half-wired protocol is indistinguishable from a
+working one until the first trade fails, which is too late to find out.
+
+It then prints every address as a `NEXT_PUBLIC_*` line **and** writes
+`contracts/deployments/<chainid>.json`. Paste the printed block straight into `web/.env.local`; the
+JSON is the durable record, since Foundry's own `broadcast/` output is gitignored and console
+output is gone as soon as the terminal scrolls.
 
 Regenerate frontend ABIs after any Solidity change:
 

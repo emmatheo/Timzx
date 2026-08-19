@@ -10,6 +10,10 @@ optimizer_runs = 200
 via_ir = false
 evm_version = "cancun"
 
+# The deploy script writes deployments/<chainid>.json. Scoped to that one directory so a script
+# cannot read a key file or write anywhere else in the repo.
+fs_permissions = [{access = "read-write", path = "./deployments"}]
+
 [fmt]
 line_length = 110
 tab_width = 4

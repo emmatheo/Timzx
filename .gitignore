@@ -23,3 +23,7 @@ next-env.d.ts
 coverage/
 .vercel
 .DS_Store
+
+# Local-chain deployment records. Records for real networks are committed deliberately, so the
+# addresses survive the terminal that printed them.
+contracts/deployments/31337.json
