@@ -1,125 +1,71 @@
 'use client';
 
+import {useQuery} from '@tanstack/react-query';
 import {useCallback, useState} from 'react';
-import {useAccount, useBalance, usePublicClient, useReadContracts, useWalletClient} from 'wagmi';
+import {useAccount, useBalance} from 'wagmi';
 
-import {settlementTokenAbi, testnetFaucetAbi} from '@/lib/abi';
-import {creditcoin, explorerTxUrl} from '@/lib/config/chains';
-import {contractAddresses} from '@/lib/config/env';
 import {useToast} from '@/components/ui/toast';
+import {creditcoin, explorerTxUrl} from '@/lib/config/chains';
+import {readableError} from '@/lib/services';
+import {useServices} from './use-services';
 
 /**
  * Testnet faucet.
  *
- * Cooldown, drip amount and remaining balance all come from the contract, so the UI cannot show a
- * request as available when the chain would reject it. There is no simulated success path: if the
- * transaction fails, the failure is what gets shown.
+ * Cooldown, drip amount and reserve all come from the contract, so the interface cannot offer a
+ * request the chain would reject. A failed request reports the failure — there is no simulated
+ * success.
  */
 export function useFaucet() {
   const {address} = useAccount();
-  const publicClient = usePublicClient({chainId: creditcoin.id});
-  const {data: walletClient} = useWalletClient({chainId: creditcoin.id});
+  const services = useServices();
   const {push} = useToast();
   const [pending, setPending] = useState(false);
 
-  const faucet = contractAddresses.faucet;
-  const token = contractAddresses.settlementToken;
+  const configured = services?.faucet.isAvailable ?? false;
 
-  const {data, refetch} = useReadContracts({
-    contracts:
-      faucet && token
-        ? [
-            {
-              address: faucet,
-              abi: testnetFaucetAbi,
-              chainId: creditcoin.id,
-              functionName: 'dripAmount',
-            } as const,
-            {
-              address: faucet,
-              abi: testnetFaucetAbi,
-              chainId: creditcoin.id,
-              functionName: 'cooldown',
-            } as const,
-            {
-              address: faucet,
-              abi: testnetFaucetAbi,
-              chainId: creditcoin.id,
-              functionName: 'availableAt',
-              args: [address ?? '0x0000000000000000000000000000000000000000'],
-            } as const,
-            {
-              address: faucet,
-              abi: testnetFaucetAbi,
-              chainId: creditcoin.id,
-              functionName: 'lastRequestAt',
-              args: [address ?? '0x0000000000000000000000000000000000000000'],
-            } as const,
-            {
-              address: token,
-              abi: settlementTokenAbi,
-              chainId: creditcoin.id,
-              functionName: 'balanceOf',
-              args: [faucet],
-            } as const,
-          ]
-        : [],
-    query: {enabled: faucet !== null && token !== null},
+  const state = useQuery({
+    queryKey: ['faucet', address],
+    enabled: configured && address !== undefined && services !== null,
+    queryFn: () => services!.faucet.state(address as `0x${string}`),
   });
 
   const native = useBalance({address, chainId: creditcoin.id});
 
-  const request = useCallback(async () => {
-    if (!faucet || !publicClient || !walletClient || !address) {
+  const request = useCallback(async (): Promise<boolean> => {
+    if (!services?.ready) {
       push({kind: 'error', title: 'Connect a wallet on Creditcoin first'});
       return false;
     }
     try {
       setPending(true);
-      const {request: simulated} = await publicClient.simulateContract({
-        account: address,
-        address: faucet,
-        abi: testnetFaucetAbi,
-        functionName: 'request',
-      });
-      const hash = await walletClient.writeContract(simulated);
-      await publicClient.waitForTransactionReceipt({hash});
+      const hash = await services.faucet.request();
       push({
         kind: 'success',
         title: 'Testnet tokens sent',
         href: explorerTxUrl(creditcoin.id, hash) ?? undefined,
       });
-      await refetch();
+      await state.refetch();
       return true;
     } catch (error) {
-      push({
-        kind: 'error',
-        title: 'Faucet request failed',
-        description:
-          error instanceof Error ? (error.message.split('\n')[0] ?? '') : 'Unknown error',
-      });
+      push({kind: 'error', title: 'Faucet request failed', description: readableError(error)});
       return false;
     } finally {
       setPending(false);
     }
-  }, [address, faucet, publicClient, push, refetch, walletClient]);
-
-  const read = <T,>(index: number): T | null => {
-    const entry = data?.[index];
-    return entry?.status === 'success' ? (entry.result as T) : null;
-  };
+  }, [push, services, state]);
 
   return {
-    configured: faucet !== null && token !== null,
-    dripAmount: read<bigint>(0) ?? 0n,
-    cooldownSeconds: Number(read<bigint>(1) ?? 0n),
-    availableAt: Number(read<bigint>(2) ?? 0n),
-    lastRequestAt: Number(read<bigint>(3) ?? 0n),
-    faucetBalance: read<bigint>(4) ?? 0n,
+    configured,
+    dripAmount: state.data?.dripAmount ?? 0n,
+    cooldownSeconds: state.data?.cooldownSeconds ?? 0,
+    availableAt: state.data?.availableAt ?? 0,
+    lastRequestAt: state.data?.lastRequestAt ?? 0,
+    faucetBalance: state.data?.reserve ?? 0n,
     nativeBalance: native.data?.value ?? 0n,
     nativeSymbol: native.data?.symbol ?? 'CTC',
     pending,
     request,
-    refetch,
+    refetch: state.refetch,
   };
 }
