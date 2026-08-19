@@ -3,75 +3,47 @@
 /*
  * TImx design system.
  *
- * One dark surface ramp plus one accent. The restraint is deliberate: a trade-finance product is
- * read, not admired, so colour is reserved for meaning — accent for action, and the four semantic
- * hues for trade state. Anything that is merely structure is a surface or a border.
+ * Light-first, following the product reference: white cards on a soft tinted canvas, one indigo
+ * accent, and colour reserved for meaning. A trade-finance product is read rather than admired, so
+ * anything that is merely structure is a surface or a hairline border, and the only saturated
+ * elements on a page are status and action.
  */
 @theme {
-  /* Surface ramp, darkest to lightest. Every panel picks one; nothing invents its own. */
-  --color-canvas: #08090d;
-  --color-surface: #0e1016;
-  --color-surface-raised: #14171f;
-  --color-surface-overlay: #191d27;
-  --color-surface-hover: #1e222d;
+  /* Surface ramp. The canvas is tinted so white cards lift off it without needing shadow. */
+  --color-canvas: #f5f6fb;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-overlay: #f7f8fc;
+  --color-surface-hover: #f0f2f9;
 
-  --color-line: #232734;
-  --color-line-strong: #2f3543;
+  --color-line: #e7e9f2;
+  --color-line-strong: #d5d9e8;
 
-  --color-ink: #f4f5f7;
-  --color-ink-muted: #a2a8b8;
-  --color-ink-subtle: #6b7180;
+  --color-ink: #101322;
+  --color-ink-muted: #5b6379;
+  --color-ink-subtle: #8b93a7;
 
-  /* Accent. Indigo carries actions; violet appears only in the hero gradient. */
-  --color-accent: #6366f1;
-  --color-accent-hover: #7c7ff3;
-  --color-accent-soft: #1c1e3a;
-  --color-violet: #8b5cf6;
+  /* Accent. Indigo carries every action; violet appears only in the hero gradient. */
+  --color-accent: #4f46e5;
+  --color-accent-hover: #4338ca;
+  --color-accent-soft: #eef0fe;
+  --color-violet: #7c3aed;
 
   /* Semantic. Mapped to trade state, never used decoratively. */
-  --color-positive: #10b981;
-  --color-positive-soft: #0c2620;
-  --color-warning: #f59e0b;
-  --color-warning-soft: #2a1f0a;
-  --color-danger: #ef4444;
-  --color-danger-soft: #2a1215;
-  --color-info: #38bdf8;
-  --color-info-soft: #0c2233;
+  --color-positive: #0f9d58;
+  --color-positive-soft: #e6f6ee;
+  --color-warning: #d97706;
+  --color-warning-soft: #fdf1e3;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fdecec;
+  --color-info: #2563eb;
+  --color-info-soft: #e8effd;
 
-  --radius-card: 14px;
+  --radius-card: 16px;
 
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
     sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
-}
-
-/*
- * Light palette for the data-heavy surfaces (marketplace, trade detail) where long tables read
- * better on light. Applied by wrapping a subtree in `.surface-light` rather than by a global
- * theme toggle, so the two can sit side by side in one layout.
- */
-.surface-light {
-  --color-canvas: #f7f8fa;
-  --color-surface: #ffffff;
-  --color-surface-raised: #ffffff;
-  --color-surface-overlay: #ffffff;
-  --color-surface-hover: #f1f3f7;
-
-  --color-line: #e3e6ed;
-  --color-line-strong: #cdd2dd;
-
-  --color-ink: #11131a;
-  --color-ink-muted: #5a6172;
-  --color-ink-subtle: #858c9c;
-
-  --color-accent-soft: #eef0fe;
-  --color-positive-soft: #e8f7f1;
-  --color-warning-soft: #fdf3e2;
-  --color-danger-soft: #fdecec;
-  --color-info-soft: #e7f4fd;
-
-  background-color: var(--color-canvas);
-  color: var(--color-ink);
 }
 
 * {
@@ -79,7 +51,7 @@
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
@@ -102,9 +74,9 @@ body {
  */
 .hero-gradient {
   background:
-    radial-gradient(120% 140% at 12% 0%, color-mix(in oklab, var(--color-accent) 22%, transparent) 0%, transparent 55%),
-    radial-gradient(90% 120% at 88% 10%, color-mix(in oklab, var(--color-violet) 16%, transparent) 0%, transparent 60%),
-    var(--color-surface);
+    radial-gradient(120% 150% at 8% 0%, color-mix(in oklab, var(--color-accent) 16%, white) 0%, transparent 58%),
+    radial-gradient(95% 130% at 92% 8%, color-mix(in oklab, var(--color-violet) 12%, white) 0%, transparent 62%),
+    linear-gradient(180deg, #ffffff 0%, var(--color-surface-overlay) 100%);
 }
 
 ::-webkit-scrollbar {

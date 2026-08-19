@@ -109,7 +109,7 @@ Next.js 15 App Router, React 19, TypeScript strict, Tailwind v4, wagmi + viem, S
 No ethers anywhere.
 
 ```
-lib/services/attestation/   the USC seam — one interface, two implementations
+lib/services/attestation/   the USC seam — proof fetch, verification, submission
 lib/config/                 every address and endpoint, resolved once
 lib/abi/                    generated from Foundry artifacts, never hand-written
 hooks/                      chain reads (multicall) and write paths (simulate-then-sign)
@@ -186,7 +186,7 @@ public by design.
 
 ---
 
-## Demo script
+## Walkthrough
 
 1. **Faucet** — connect a wallet, request tUSD. Cooldown is enforced on-chain.
 2. **Create Trade** — $50,000 solar panels, $10,000 collateral, 90 days, 8%. Prefill from the
@@ -205,9 +205,9 @@ public by design.
 12. **Developer** — the flow, the live precompile reads, and every attestation with its true
     proof kind.
 
-Switching from demo to proving: set `NEXT_PUBLIC_ATTESTATION_MODE=usc`, pin the QueryBuilder
-offsets, then call `setAttestationAdapter(uscAdapter)` and `setRequireProofBacked(true)`. No
-redeploy, no trade-state migration.
+Steps 7 and 8 require the proof pipeline: a `TradeEventEmitter` transaction on the source chain,
+an attested source height, and pinned QueryBuilder offsets. Without them the submission fails with
+a specific reason rather than advancing the trade on trust.
 
 ---
 

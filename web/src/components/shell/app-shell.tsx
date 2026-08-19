@@ -183,7 +183,7 @@ export function AppShell({children}: {children: ReactNode}) {
 
       {/* Mobile bottom bar */}
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 backdrop-blur-md lg:hidden">
-        <div className="grid grid-cols-4">
+        <div className="grid grid-cols-5">
           {navItems
             .filter((item) => item.primary)
             .map((item) => {

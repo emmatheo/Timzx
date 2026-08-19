@@ -6,7 +6,7 @@
  * selected by `NEXT_PUBLIC_CREDITCOIN_NETWORK` rather than hardcoded at a call site.
  */
 import {defineChain} from 'viem';
-import {sepolia} from 'viem/chains';
+import {foundry, sepolia} from 'viem/chains';
 
 export const creditcoinTestnet = defineChain({
   id: 102031,
@@ -46,16 +46,31 @@ export const creditcoinDevnet = defineChain({
  */
 export const sourceChain = sepolia;
 
+/**
+ * Local Foundry node, for development against contracts deployed with `anvil`.
+ *
+ * The Creditcoin precompiles do not exist here, so a trade can be created, collateralised, financed
+ * and funded, but cannot advance past FUNDED — proving a shipment requires the block prover. That
+ * is the correct behaviour rather than a limitation to work around: on a chain that cannot verify,
+ * the protocol declines to move.
+ */
+export const localChain = defineChain({
+  ...foundry,
+  name: 'Local (Anvil)',
+});
+
 const networks = {
   'cc3-testnet': creditcoinTestnet,
   'cc3-devnet': creditcoinDevnet,
+  local: localChain,
 } as const;
 
 export type NetworkName = keyof typeof networks;
 
 function resolveNetwork(): NetworkName {
   const configured = process.env.NEXT_PUBLIC_CREDITCOIN_NETWORK;
-  return configured === 'cc3-devnet' ? 'cc3-devnet' : 'cc3-testnet';
+  if (configured === 'cc3-devnet' || configured === 'local') return configured;
+  return 'cc3-testnet';
 }
 
 export const activeNetworkName = resolveNetwork();
@@ -73,8 +88,12 @@ export const precompiles = {
 } as const;
 
 export function explorerTxUrl(chainId: number, hash: string): string | null {
+  // A local node has no explorer; returning null makes the UI render plain text rather than a
+  // link that would 404.
+  if (activeNetworkName === 'local') return null;
   if (chainId === creditcoin.id) {
-    return `${creditcoin.blockExplorers.default.url}/tx/${hash}`;
+    const explorer = creditcoin.blockExplorers?.default.url;
+    return explorer ? `${explorer}/tx/${hash}` : null;
   }
   if (chainId === sourceChain.id) {
     return `${sourceChain.blockExplorers.default.url}/tx/${hash}`;
@@ -83,8 +102,10 @@ export function explorerTxUrl(chainId: number, hash: string): string | null {
 }
 
 export function explorerAddressUrl(chainId: number, address: string): string | null {
+  if (activeNetworkName === 'local') return null;
   if (chainId === creditcoin.id) {
-    return `${creditcoin.blockExplorers.default.url}/address/${address}`;
+    const explorer = creditcoin.blockExplorers?.default.url;
+    return explorer ? `${explorer}/address/${address}` : null;
   }
   if (chainId === sourceChain.id) {
     return `${sourceChain.blockExplorers.default.url}/address/${address}`;

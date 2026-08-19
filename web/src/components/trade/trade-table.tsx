@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {ArrowRight, Inbox} from 'lucide-react';
 
 import {EmptyState, SkeletonRows} from '@/components/ui/states';
-import {TradeProgress} from './trade-progress';
+import {TradeStepper} from './trade-stepper';
 import {TradeStatus} from './trade-status';
 import {formatDate, formatMoney, shortenAddress} from '@/lib/format';
 import {nextStep} from '@/lib/finance';
@@ -104,7 +104,7 @@ export function TradeTable({
                   </td>
                   <td className="px-4 py-3">
                     <TradeStatus state={chain.state} />
-                    <TradeProgress state={chain.state} className="mt-2" />
+                    <TradeStepper state={chain.state} showLabels={false} className="mt-2 max-w-[132px]" />
                   </td>
                   <td className="px-4 py-3">
                     <span className="block text-[13px] text-ink">{step.label}</span>
@@ -146,7 +146,7 @@ export function TradeTable({
                   <TradeStatus state={chain.state} />
                 </div>
 
-                <TradeProgress state={chain.state} className="mt-3" />
+                <TradeStepper state={chain.state} className="mt-4" />
 
                 <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[12px]">
                   <div className="flex justify-between">

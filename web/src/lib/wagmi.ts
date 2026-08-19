@@ -1,7 +1,7 @@
 import {injected} from '@wagmi/core';
 import {cookieStorage, createConfig, createStorage, http} from 'wagmi';
 
-import {creditcoinDevnet, creditcoinTestnet, sourceChain} from '@/lib/config/chains';
+import {creditcoinDevnet, creditcoinTestnet, localChain, sourceChain} from '@/lib/config/chains';
 
 /**
  * Wallet configuration.
@@ -18,7 +18,7 @@ import {creditcoinDevnet, creditcoinTestnet, sourceChain} from '@/lib/config/cha
  * state on first paint rather than flashing a disconnected header.
  */
 export const wagmiConfig = createConfig({
-  chains: [creditcoinTestnet, creditcoinDevnet, sourceChain],
+  chains: [creditcoinTestnet, creditcoinDevnet, localChain, sourceChain],
   connectors: [injected()],
   storage: createStorage({storage: cookieStorage}),
   ssr: true,
@@ -27,6 +27,7 @@ export const wagmiConfig = createConfig({
   transports: {
     [creditcoinTestnet.id]: http(),
     [creditcoinDevnet.id]: http(),
+    [localChain.id]: http(),
     [sourceChain.id]: http(),
   },
 });
