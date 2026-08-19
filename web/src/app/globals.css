@@ -1,0 +1,110 @@
+@import 'tailwindcss';
+
+/*
+ * TImx design system.
+ *
+ * Light-first, following the product reference: white cards on a soft tinted canvas, one indigo
+ * accent, and colour reserved for meaning. A trade-finance product is read rather than admired, so
+ * anything that is merely structure is a surface or a hairline border, and the only saturated
+ * elements on a page are status and action.
+ */
+@theme {
+  /* Surface ramp. The canvas is tinted so white cards lift off it without needing shadow. */
+  --color-canvas: #f5f6fb;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-overlay: #f7f8fc;
+  --color-surface-hover: #f0f2f9;
+
+  --color-line: #e7e9f2;
+  --color-line-strong: #d5d9e8;
+
+  --color-ink: #101322;
+  --color-ink-muted: #5b6379;
+  --color-ink-subtle: #8b93a7;
+
+  /* Accent. Indigo carries every action; violet appears only in the hero gradient. */
+  --color-accent: #4f46e5;
+  --color-accent-hover: #4338ca;
+  --color-accent-soft: #eef0fe;
+  --color-violet: #7c3aed;
+
+  /* Semantic. Mapped to trade state, never used decoratively. */
+  --color-positive: #0f9d58;
+  --color-positive-soft: #e6f6ee;
+  --color-warning: #d97706;
+  --color-warning-soft: #fdf1e3;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fdecec;
+  --color-info: #2563eb;
+  --color-info-soft: #e8effd;
+
+  --radius-card: 16px;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+}
+
+* {
+  border-color: var(--color-line);
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv02', 'cv03', 'cv04';
+}
+
+/* Tabular figures everywhere money is shown, so columns of numbers align. */
+.numeric {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/*
+ * The single gradient in the product, used once on the dashboard hero. Kept here rather than
+ * inline so there is exactly one place it can be reused from, and no temptation to sprinkle it.
+ */
+.hero-gradient {
+  background:
+    radial-gradient(120% 150% at 8% 0%, color-mix(in oklab, var(--color-accent) 16%, white) 0%, transparent 58%),
+    radial-gradient(95% 130% at 92% 8%, color-mix(in oklab, var(--color-violet) 12%, white) 0%, transparent 62%),
+    linear-gradient(180deg, #ffffff 0%, var(--color-surface-overlay) 100%);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

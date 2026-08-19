@@ -1,0 +1,136 @@
+name: CI
+
+# Runs the same checks that were run locally before this project was first pushed, so the
+# repository proves its own state rather than relying on a claim in a pull request description.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    name: Contracts (Foundry)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      # `lib/` is gitignored, so dependencies are installed rather than checked out. Pinned to the
+      # same versions setup.sh uses, so CI and a local checkout compile identical sources.
+      - name: Install Solidity dependencies
+        run: |
+          forge install foundry-rs/forge-std
+          forge install OpenZeppelin/openzeppelin-contracts@v5.1.0
+
+      # `--root .` is required throughout: foundry.toml lives in contracts/, but Foundry walks up
+      # to the git root without it and fails to resolve remappings.
+      #
+      # Deliberately not `--deny-warnings`. That flag folds `forge lint` into the build gate, and
+      # the lint rule set changes between Foundry releases: the `block-timestamp` rule does not
+      # exist in 1.5.x but fails the build on current stable, while older Foundry versions reject
+      # an `exclude_lints` entry naming a rule they do not know. Gating the build on it would mean
+      # CI passing or failing based on which Foundry a contributor happens to have. Compiler
+      # warnings still surface in the log, and lint runs below as an advisory step.
+      - name: Build
+        run: forge build --root .
+
+      - name: Test
+        run: forge test --root . -vvv
+
+      # Advisory. Findings are visible in the job output without gating the pipeline on a rule set
+      # that shifts underneath the project. Reviewed as of this commit: the only findings are
+      # `block-timestamp` at three sites, all comparing against horizons of hours to months, where
+      # the seconds of drift a validator controls cannot change the outcome.
+      - name: Lint (advisory)
+        continue-on-error: true
+        run: forge lint --root .
+
+      - name: Check formatting
+        run: forge fmt --root . --check
+
+  web:
+    name: Frontend (Next.js)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    env:
+      # The generated ABI modules are large `as const` literals and wagmi infers contract call
+      # types across all of them, which makes `tsc` genuinely memory-hungry: it peaks around 4.0 GB,
+      # just under Node's ~4.1 GB default cap, so the typecheck OOMed on the runner while passing
+      # locally. Raising the ceiling rather than weakening the types — the const assertions are what
+      # make a mistyped contract call a compile error instead of a failed transaction.
+      NODE_OPTIONS: --max-old-space-size=8192
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      # Builds with no contract addresses configured, which is the state a fresh clone is in.
+      # If the app cannot build without a deployment, that is a bug worth catching here.
+      - name: Build
+        run: npm run build
+
+  abi-drift:
+    name: ABI drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Solidity dependencies
+        working-directory: contracts
+        run: |
+          forge install foundry-rs/forge-std
+          forge install OpenZeppelin/openzeppelin-contracts@v5.1.0
+
+      - name: Rebuild and regenerate ABIs
+        working-directory: contracts
+        run: |
+          forge build --root .
+          node script/export-abi.mjs
+
+      # The frontend consumes ABIs generated from the compiled contracts. If someone edits the
+      # Solidity without regenerating, the app would silently encode calls against a stale
+      # interface — so a drift is a build failure, not a warning.
+      - name: Fail if generated ABIs are out of date
+        run: |
+          if ! git diff --quiet -- web/src/lib/abi; then
+            echo "Generated ABIs are out of date. Run 'node script/export-abi.mjs' from contracts/ and commit the result."
+            git --no-pager diff --stat -- web/src/lib/abi
+            exit 1
+          fi
+          echo "ABIs are in sync with the compiled contracts."

@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+contracts/lib/
+
+# Build output
+.next/
+dist/
+build/
+out/
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+*.tsbuildinfo
+next-env.d.ts
+
+# Secrets — never commit. .env.example files are tracked deliberately.
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Tooling
+coverage/
+.vercel
+.DS_Store
+
+# Local-chain deployment records. Records for real networks are committed deliberately, so the
+# addresses survive the terminal that printed them.
+contracts/deployments/31337.json
