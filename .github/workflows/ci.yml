@@ -66,6 +66,13 @@ jobs:
     defaults:
       run:
         working-directory: web
+    env:
+      # The generated ABI modules are large `as const` literals and wagmi infers contract call
+      # types across all of them, which makes `tsc` genuinely memory-hungry: it peaks around 4.0 GB,
+      # just under Node's ~4.1 GB default cap, so the typecheck OOMed on the runner while passing
+      # locally. Raising the ceiling rather than weakening the types — the const assertions are what
+      # make a mistyped contract call a compile error instead of a failed transaction.
+      NODE_OPTIONS: --max-old-space-size=8192
     steps:
       - uses: actions/checkout@v4
 

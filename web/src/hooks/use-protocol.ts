@@ -130,7 +130,10 @@ export function useAllTrades() {
 
   return {
     trades,
-    isLoading: countLoading || isLoading,
+    // A disabled query stays `pending` in react-query, so without this the UI shows a loading
+    // skeleton forever on a deployment where the protocol is not configured. Nothing is loading
+    // when there is nothing to load: report settled and let the caller render its empty state.
+    isLoading: financeAddress === null ? false : countLoading || isLoading,
     refetch: async () => {
       await refetchCount();
       await refetch();
@@ -172,7 +175,7 @@ export function useTrade(tradeId: bigint | null) {
   return {
     trade: trade && trade.id !== 0n ? trade : null,
     outstanding: data?.[1]?.status === 'success' ? (data[1].result as bigint) : 0n,
-    isLoading,
+    isLoading: enabled ? isLoading : false,
     refetch,
   };
 }
@@ -204,7 +207,8 @@ export function useCreditRecord(account?: Address) {
       }
     : null;
 
-  return {record, isLoading, refetch, address: target};
+  const enabled = financeAddress !== null && target !== undefined;
+  return {record, isLoading: enabled ? isLoading : false, refetch, address: target};
 }
 
 /**
@@ -275,7 +279,7 @@ export function useSettlementToken(account?: Address) {
     balance: data?.[0]?.status === 'success' ? (data[0].result as bigint) : 0n,
     symbol: data?.[1]?.status === 'success' ? (data[1].result as string) : 'tUSD',
     decimals: data?.[2]?.status === 'success' ? Number(data[2].result) : 6,
-    isLoading,
+    isLoading: token !== null && target !== undefined ? isLoading : false,
     refetch,
   };
 }
