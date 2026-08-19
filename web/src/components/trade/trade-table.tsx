@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {ArrowRight, Inbox} from 'lucide-react';
+import {AlertTriangle, ArrowRight, Inbox} from 'lucide-react';
 
 import {EmptyState, SkeletonRows} from '@/components/ui/states';
 import {TradeStepper} from './trade-stepper';
@@ -20,16 +20,30 @@ import type {TradeView} from '@/types/trade';
 export function TradeTable({
   trades,
   isLoading,
+  error,
   emptyTitle = 'No trades yet',
   emptyDescription,
   emptyAction,
 }: {
   trades: TradeView[];
   isLoading?: boolean;
+  /** Set when the chain could not be read at all, as opposed to reading zero trades. */
+  error?: Error | null;
   emptyTitle?: string;
   emptyDescription?: string;
   emptyAction?: React.ReactNode;
 }) {
+  // Order matters: an unreachable node is not an empty portfolio, and must not be shown as one.
+  if (error) {
+    return (
+      <EmptyState
+        icon={AlertTriangle}
+        title="Could not reach the network"
+        description={`The Creditcoin RPC did not respond, so trades could not be read. This is a connection problem, not an empty portfolio. ${error.message.split('\n')[0] ?? ''}`}
+      />
+    );
+  }
+
   if (isLoading) return <SkeletonRows rows={5} />;
 
   if (trades.length === 0) {

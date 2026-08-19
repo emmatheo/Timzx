@@ -35,7 +35,7 @@ const FILTERS: {id: string; label: string; states: readonly TradeStateValue[] | 
 ];
 
 export default function MyTradesPage() {
-  const {trades: entries, isLoading} = useMyTrades();
+  const {trades: entries, isLoading, error} = useMyTrades();
   const views = useTradeViews(entries);
   const [active, setActive] = useState('all');
 
@@ -107,6 +107,7 @@ export default function MyTradesPage() {
         <TradeTable
           trades={visible}
           isLoading={isLoading}
+          error={error}
           emptyTitle="No trades in this view"
           emptyDescription="Create a trade, or finance one from the marketplace, to see it here."
         />

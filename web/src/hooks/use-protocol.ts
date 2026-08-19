@@ -86,7 +86,12 @@ function toTrade(raw: {
  * matters because the marketplace and dashboard both want the full set.
  */
 export function useAllTrades() {
-  const {data: count, isLoading: countLoading, refetch: refetchCount} = useTradeCount();
+  const {
+    data: count,
+    isLoading: countLoading,
+    error: countError,
+    refetch: refetchCount,
+  } = useTradeCount();
   const total = count ? Number(count) : 0;
 
   const contracts = useMemo(() => {
@@ -109,7 +114,7 @@ export function useAllTrades() {
     ]);
   }, [total]);
 
-  const {data, isLoading, refetch} = useReadContracts({
+  const {data, isLoading, error, refetch} = useReadContracts({
     contracts,
     query: {enabled: contracts.length > 0},
   });
@@ -134,6 +139,10 @@ export function useAllTrades() {
     // skeleton forever on a deployment where the protocol is not configured. Nothing is loading
     // when there is nothing to load: report settled and let the caller render its empty state.
     isLoading: financeAddress === null ? false : countLoading || isLoading,
+    // An unreachable RPC is the other way this spins forever: the query stays pending while the
+    // transport retries, and a skeleton is indistinguishable from a slow chain. Surfacing the
+    // error lets the UI say the node is unreachable instead of implying data is on its way.
+    error: (countError ?? error) as Error | null,
     refetch: async () => {
       await refetchCount();
       await refetch();
@@ -311,7 +320,7 @@ export function useObligation(tradeId: bigint | null) {
 /** Trades where the connected wallet is a counterparty, in either direction. */
 export function useMyTrades() {
   const {address} = useAccount();
-  const {trades, isLoading, refetch} = useAllTrades();
+  const {trades, isLoading, error, refetch} = useAllTrades();
 
   const mine = useMemo(() => {
     if (!address) return [];
@@ -324,15 +333,15 @@ export function useMyTrades() {
     );
   }, [trades, address]);
 
-  return {trades: mine, isLoading, refetch};
+  return {trades: mine, isLoading, error, refetch};
 }
 
 /** Trades open for financing: collateral locked, no financier yet. */
 export function useFinanceableTrades() {
-  const {trades, isLoading, refetch} = useAllTrades();
+  const {trades, isLoading, error, refetch} = useAllTrades();
   const open = useMemo(
     () => trades.filter(({trade}) => trade.state === TradeState.COLLATERAL_LOCKED),
     [trades],
   );
-  return {trades: open, isLoading, refetch};
+  return {trades: open, isLoading, error, refetch};
 }
